@@ -1,0 +1,14 @@
+# temp readme.md
+    code here
+
+start with placing ravdess wav/mp4 files into raw directory  
+- 4M/2F total dataset
+- split: 3M/1F train. 1M/1F eval
+
+AUDIO (MFCC, maybe use librosa)
+
+VISUAL (CNN, use OpenCV to extract frames, and then use pre-trained 2D CNN model. pytorch or keras)
+
+FUSION CLASSIFIER (finish audio classifier first, then video, and then combine both using late fusion)
+
+scikit for evaluation, cm f1 and other performance metrics. compare evaluation using just audio or visual only, then compare with multimodal model
