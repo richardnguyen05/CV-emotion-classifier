@@ -11,3 +11,12 @@ VISUAL (CNN, use OpenCV to extract frames, and then use pre-trained 2D CNN model
 FUSION CLASSIFIER (finish video classifier)
 
 scikit for evaluation, cm f1 and other performance metrics. compare evaluation using just audio or visual only, then compare with multimodal model
+
+### PROCESS
+small CNN from scratch 
+
+train on fer 2013 
+
+use 2-3 conv layers, 1-2 FC layers 
+
+data augmentation - helps generalization 
