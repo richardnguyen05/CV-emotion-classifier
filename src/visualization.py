@@ -1,11 +1,5 @@
 import matplotlib.pyplot as plt
-from preprocessing import train_loader, train_data 
-
-
-# visualizing train data
-images, labels = next(iter(train_loader))
-
-
+from collections import Counter
 
 def plot_samples(images, labels, class_names, n_rows=4, n_cols=4, title="Sample Images"):
     """
@@ -36,3 +30,59 @@ def plot_samples(images, labels, class_names, n_rows=4, n_cols=4, title="Sample 
         ax.axis('off')
     plt.tight_layout()
     plt.show()
+
+def plot_class_distribution(dataset, title="Class Distribution"):
+    """
+    Plots a bar graph showing the number of samples for each class in a dataset.
+
+    Parameters:
+        dataset : torchvision.datasets.ImageFolder
+            Dataset containing images and their class labels
+        title : str
+            Title of the plot
+    """
+    # Count the number of samples for each class
+    labels = [label for _, label in dataset]
+    label_counts = Counter(labels)
+    
+    # Get class names
+    class_names = dataset.classes
+    
+    # Prepare data for plotting
+    counts = [label_counts[i] for i in range(len(class_names))]
+    
+    # Plot bar graph
+    plt.figure(figsize=(8,5))
+    plt.bar(class_names, counts, color='skyblue')
+    plt.xlabel("Emotion")
+    plt.ylabel("Number of Samples")
+    plt.title(title)
+    plt.xticks(rotation=45)
+    plt.show()
+
+if __name__ == "__main__":
+    from preprocessing import raw_train_data, train_data, train_loader, test_data, test_loader
+
+    print("Visualizing TRAIN DATA before preprocessing...")
+    # raw samples 
+    raw_images, raw_labels = zip(*[raw_train_data[i] for i in range(16)])  # get first 16 samples
+    fig, axes = plt.subplots(4, 4, figsize=(8, 8))
+    fig.suptitle("Raw Training Samples (Before Preprocessing)", fontsize=14)
+    for i, ax in enumerate(axes.flat):
+        img, label = raw_images[i], raw_labels[i]
+        ax.imshow(img, cmap='gray')
+        ax.set_title(raw_train_data.classes[label])
+        ax.axis('off')
+    plt.tight_layout()
+    plt.show()
+
+    print("Visualizing TRAIN DATA after preprocessing...")
+    # preprocessed (augmented) samples
+    images, labels = next(iter(train_loader))
+    plot_samples(images, labels, train_data.classes, title="Training Samples (After Preprocessing)")
+
+    print("Visualizing TRAIN and TEST class distributions...")
+    plot_class_distribution(raw_train_data, title="Train Class Distribution")
+    plot_class_distribution(test_data, title="Test Class Distribution")
+
+    print("Visualization complete.")

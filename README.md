@@ -20,3 +20,6 @@ train on fer 2013
 use 2-3 conv layers, 1-2 FC layers 
 
 data augmentation - helps generalization 
+
+#### next step
+visualize train data before vs after preprocessing. Also vis the sample size and distribution for train and test.

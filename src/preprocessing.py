@@ -14,14 +14,14 @@ train_transform = transforms.Compose([
 ])
 # transformations for test data
 test_transform = transforms.Compose([
+    transforms.Resize((48, 48)), # scales photo to 48x48
     transforms.Grayscale(num_output_channels=1),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5], std=[0.5])
 ])
 
-# loading datasets (before preprocessing)
-train_data = datasets.ImageFolder(root='../data/raw/train')
-test_data = datasets.ImageFolder(root='../data/raw/test')
+# loading train datasets (before preprocessing)
+raw_train_data = datasets.ImageFolder(root='../data/raw/train') # for visualizing
 
 # loading datasets (after preprocessing)
 train_data = datasets.ImageFolder(root='../data/raw/train', transform=train_transform)
