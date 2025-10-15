@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 from collections import Counter
 
+from preprocessing import train_loader, raw_train_loader, train_data, test_data
+
 def plot_samples(images, labels, class_names, n_rows=4, n_cols=4, title="Sample Images"):
     """
     Plots a grid of images with their corresponding labels
@@ -23,8 +25,9 @@ def plot_samples(images, labels, class_names, n_rows=4, n_cols=4, title="Sample 
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols*2, n_rows*2)) # 4x4 subplot
     fig.suptitle(title, fontsize=14)
     for i, ax in enumerate(axes.flat): # flatten 2D array into 1D iterator, enumerate keeps track of image index
-        img = images[i].squeeze(0) # remove channel dimension for grayscale
+        img = images[i]
         img = img * 0.5 + 0.5 # unnormalize from [-1, 1] → [0, 1]
+        img = img.squeeze() # remove channel dimension
         ax.imshow(img, cmap='gray')
         ax.set_title(class_names[labels[i]])
         ax.axis('off')
@@ -42,16 +45,10 @@ def plot_class_distribution(dataset, title="Class Distribution"):
             Title of the plot
     """
     # Count the number of samples for each class
-    labels = [label for _, label in dataset]
-    label_counts = Counter(labels)
-    
-    # Get class names
+    label_counts = Counter(dataset.targets) # .targets make dataset iteration faster
     class_names = dataset.classes
-    
-    # Prepare data for plotting
     counts = [label_counts[i] for i in range(len(class_names))]
-    
-    # Plot bar graph
+
     plt.figure(figsize=(8,5))
     plt.bar(class_names, counts, color='skyblue')
     plt.xlabel("Emotion")
@@ -60,29 +57,23 @@ def plot_class_distribution(dataset, title="Class Distribution"):
     plt.xticks(rotation=45)
     plt.show()
 
-if __name__ == "__main__":
-    from preprocessing import raw_train_data, train_data, train_loader, test_data
 
-    print("Visualizing TRAIN DATA before preprocessing...")
-    # raw samples 
-    raw_images, raw_labels = zip(*[raw_train_data[i] for i in range(16)])  # get first 16 samples
-    fig, axes = plt.subplots(4, 4, figsize=(8, 8))
-    fig.suptitle("Raw Training Samples (Before Preprocessing)", fontsize=14)
-    for i, ax in enumerate(axes.flat):
-        img, label = raw_images[i], raw_labels[i]
-        ax.imshow(img, cmap='gray')
-        ax.set_title(raw_train_data.classes[label])
-        ax.axis('off')
-    plt.tight_layout()
-    plt.show()
+# VISUALIZATIONS #
 
-    print("Visualizing TRAIN DATA after preprocessing...")
-    # preprocessed (augmented) samples
-    images, labels = next(iter(train_loader))
-    plot_samples(images, labels, train_data.classes, title="Training Samples (After Preprocessing)")
+# train data before preprocessing
+print("Visualizing TRAIN DATA before preprocessing...")
+images, labels = next(iter(raw_train_loader))
+plot_samples(images, labels, train_data.classes, title="TRAIN DATA before preprocessing")
 
-    print("Visualizing TRAIN and TEST class distributions...")
-    plot_class_distribution(raw_train_data, title="Train Class Distribution")
-    plot_class_distribution(test_data, title="Test Class Distribution")
+# train data after preprocessing
+print("Visualizing TRAIN DATA after preprocessing...")
+images, labels = next(iter(train_loader))
+plot_samples(images, labels, train_data.classes, title="TRAIN DATA after preprocessing")
 
-    print("Visualization complete.")
+# train class distribution
+print("Visualizing TRAIN class distribution...")
+plot_class_distribution(train_data, title="TRAIN Class Distribution")
+
+# test class distribution
+print("Visualizing TEST class distribution...")
+plot_class_distribution(test_data, title="TEST Class Distribution")
