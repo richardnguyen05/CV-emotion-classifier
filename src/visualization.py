@@ -61,7 +61,7 @@ def plot_class_distribution(dataset, title="Class Distribution"):
     plt.show()
 
 if __name__ == "__main__":
-    from preprocessing import raw_train_data, train_data, train_loader, test_data, test_loader
+    from preprocessing import raw_train_data, train_data, train_loader, test_data
 
     print("Visualizing TRAIN DATA before preprocessing...")
     # raw samples 
