@@ -11,7 +11,7 @@ train_transform = transforms.Compose([
     transforms.RandomHorizontalFlip(),
     transforms.RandomRotation(10),
     transforms.ToTensor(), # converts RGB to tensor floats
-    transforms.Normalize(mean=[0.5], std=[0.5]) # normalizing pixels
+    transforms.Normalize(mean=[0.5], std=[0.5]) # normalizing tensor to [-1,1]
 ])
 # transformations for test data
 test_transform = transforms.Compose([
