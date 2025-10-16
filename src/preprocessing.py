@@ -4,6 +4,7 @@ import torch.nn as nn
 from torch.utils.data import WeightedRandomSampler
 from torchvision import datasets, transforms
 import numpy as np
+from torch.utils.data import random_split
 
 from visualization import get_class_counts
 
@@ -30,28 +31,30 @@ raw_train_data = datasets.ImageFolder(root='../data/raw/train', transform=test_t
 train_data = datasets.ImageFolder(root='../data/raw/train', transform=train_transform)
 test_data = datasets.ImageFolder(root='../data/raw/test', transform=test_transform)
 
-# creating data loader
-raw_train_loader = DataLoader(raw_train_data, batch_size=64, shuffle=True)
-train_loader = DataLoader(train_data, batch_size=64, shuffle=True)
-test_loader  = DataLoader(test_data, batch_size=64, shuffle=False) # don't shuffle test data, for consistent evaluation
+# splitting train dataset
+train_size = int(0.8 * len(train_data)) # train will be 80% of its actual size, other 20 is for validation set
+val_size = len(train_data) - train_size
+train_subset, val_subset = random_split(train_data, [train_size, val_size])
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# get class counts and convert to np array
+# get class counts from full train data and convert to np array
 counts, class_names = get_class_counts(train_data)
 counts = np.array(counts, dtype=np.float32)
 
-# inverse freq and normalization
-class_weights = 1.0 / counts
-class_weights = class_weights / class_weights.sum()
-
-class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device) # convert to tensor
-
-# weighted loss function & WeightedRandomSampler to handle data imbalance
-criterion = nn.CrossEntropyLoss(weight=class_weights_tensor) # CrossEntropyLoss ensures minority classes contribute more in the loss calculation
-targets = np.array(train_data.targets)
-sample_weights = 1.0 / counts[targets]
-sample_weights_tensor = torch.tensor(sample_weights, dtype=torch.double) # conver to tensor
+# WeightedRandomSampler to handle data imbalance
+train_indices = train_subset.indices
+targets_subset = np.array(train_data.targets)[train_indices] # targets for only the train_subset
+sample_weights = 1.0 / counts[targets_subset]
+sample_weights_tensor = torch.tensor(sample_weights, dtype=torch.float32) # conver to tensor
 
 # WeightedRandomSampler assigns higher sampling weights to minority classes
 sampler = WeightedRandomSampler(weights=sample_weights_tensor, num_samples=len(sample_weights_tensor), replacement=True)
+
+# creating DataLoader
+raw_train_loader = DataLoader(raw_train_data, batch_size=64, shuffle=True)
+train_loader = DataLoader(
+    train_subset,
+    batch_size= 64,
+    sampler=sampler,     # WeightedRandomSampler
+)
+val_loader = DataLoader(val_subset, batch_size=64, shuffle=False)
+test_loader  = DataLoader(test_data, batch_size=64, shuffle=False) # don't shuffle test data, for consistent evaluation
