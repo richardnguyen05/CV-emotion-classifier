@@ -1,24 +1,20 @@
-import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 # import matplotlib.pyplot as plt
 
-from preprocessing import train_loader
-from visualization import counts
+from preprocessing import train_loader, val_loader, counts
 
 
 device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported 
 
-# --- GETTING WEIGHTED LOSS FUNCTION --- #
+# --- WEIGHTED LOSS FUNCTION --- #
 # inverse freq and normalization
 class_weights = 1.0 / counts
-class_weights = class_weights / class_weights.sum()
 
 class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device) # convert to tensor
-# CrossEntropyLoss ensures minority classes contribute more in the loss calculation
-criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
+criterion = nn.CrossEntropyLoss(weight=class_weights_tensor) # weight class ensures loss function prioritizes minority classes more
 
 # CNN MODEL
 class EmotionCNN(nn.Module):
@@ -66,25 +62,74 @@ class EmotionCNN(nn.Module):
 model = EmotionCNN(num_classes=7).to(device) # move CNN model to device
 optimizer = optim.Adam(model.parameters(), lr=0.001) # using Adam as optimizer
 
+# initializing variables for validation loss tracking
+train_losses = []
+val_losses = []
+val_accuracies = []
+best_val_loss = float('inf') # start with infinitely bad loss so if-comparison in training loop works 
+
 num_epochs = 10
-# training loop
+
+# Training loop with validation
 for epoch in range(num_epochs):
-    model.train()
+    model.train() # set model to training phase
     running_loss = 0.0 # reset running loss for the current epoch
+    
     for images, labels in train_loader:
         images, labels = images.to(device), labels.to(device)
-
         optimizer.zero_grad() # clear previous batch gradients
         outputs = model(images)
-        loss = criterion(outputs, labels)  # weighted loss
+        loss = criterion(outputs, labels) # weighted loss
         loss.backward()
         optimizer.step() # using optimizer to adjust weights
+        running_loss += loss.item() * images.size(0)
 
-        running_loss += loss.item() * images.size(0) # track accumulating loss
+    epoch_loss = running_loss / len(train_loader.dataset)
+    train_losses.append(epoch_loss)
+    
+    model.eval() # set model to evaluation phase
+    val_loss = 0.0
+    correct = 0
+    total = 0
+    
+    with torch.no_grad():  # disable gradients for validation
+        for images, labels in val_loader:
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item() * images.size(0)
+            
+            # calculate accuracy
+            _, predicted = torch.max(outputs, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    
+    val_epoch_loss = val_loss / len(val_loader.dataset)
+    val_accuracy = 100 * correct / total
+    val_losses.append(val_epoch_loss)
+    val_accuracies.append(val_accuracy)
+    
+    print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}, Val Acc: {val_accuracy:.2f}%")
+    
+    # Save best model
+    if val_epoch_loss < best_val_loss:
+        best_val_loss = val_epoch_loss
+        torch.save(model.state_dict(), "../trained models/best_emotion_cnn.pth")
+        print(f"Best model saved with val loss: {best_val_loss:.4f}")
 
-    epoch_loss = running_loss / len(train_loader.dataset) # normalize loss by total samples, and store that loss according to its epoch
-    print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}")
+# Save final model
+torch.save(model.state_dict(), "../trained models/final_emotion_cnn.pth")
+print("Training completed! Models saved.")
+
+# Print final results
+print(f"\nFinal Results:")
+print(f"Best Validation Loss: {best_val_loss:.4f}")
+print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
 
 
-# ADD CODE FOR SAVIVG MODEL HERE (SAVE MODEL BASED ON VALIDATION LOSS)
+# STEPS FOR NEXT TIME
+
+## CONTINUE: use tqdm to track epoch training progress
+## NEXT: WORK ON THE PREBUILT MODEL TO COMPARE W SCRATCH
+## ALSO: Build train_vis.py, used to visualize both model's performance metrics.
 

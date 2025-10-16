@@ -8,6 +8,8 @@ from torch.utils.data import random_split
 
 from collections import Counter
 
+# Note: Make sure to run preprocessing.py first before training model.
+
 def get_class_counts(dataset):
     """
     Helper function.
