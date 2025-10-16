@@ -1,6 +1,11 @@
 import torch
 from torch.utils.data import DataLoader
+import torch.nn as nn
+from torch.utils.data import WeightedRandomSampler
 from torchvision import datasets, transforms
+import numpy as np
+
+from visualization import get_class_counts
 
 # transformations for train data
 train_transform = transforms.Compose([
@@ -9,8 +14,6 @@ train_transform = transforms.Compose([
     transforms.RandomHorizontalFlip(), # horizontal flip (mirror)
     transforms.RandomRotation(10), # random rotation of up to +/- 10 degrees
     transforms.ColorJitter(brightness=0.3, contrast=0.3), # changes brightness and contrast of a photo sample
-    transforms.RandomApply(
-        [transforms.GaussianBlur(kernel_size=(3,3), sigma=(0.05,0.5))], p=0.2), # adds blur, wrapper transform to have a 20% probability
     transforms.ToTensor(), # converts to tensor floats
     transforms.Normalize(mean=[0.5], std=[0.5]) # normalizing tensor to [-1,1]
 ])
@@ -31,3 +34,24 @@ test_data = datasets.ImageFolder(root='../data/raw/test', transform=test_transfo
 raw_train_loader = DataLoader(raw_train_data, batch_size=64, shuffle=True)
 train_loader = DataLoader(train_data, batch_size=64, shuffle=True)
 test_loader  = DataLoader(test_data, batch_size=64, shuffle=False) # don't shuffle test data, for consistent evaluation
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# get class counts and convert to np array
+counts, class_names = get_class_counts(train_data)
+counts = np.array(counts, dtype=np.float32)
+
+# inverse freq and normalization
+class_weights = 1.0 / counts
+class_weights = class_weights / class_weights.sum()
+
+class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device) # convert to tensor
+
+# weighted loss function & WeightedRandomSampler to handle data imbalance
+criterion = nn.CrossEntropyLoss(weight=class_weights_tensor) # CrossEntropyLoss ensures minority classes contribute more in the loss calculation
+targets = np.array(train_data.targets)
+sample_weights = 1.0 / counts[targets]
+sample_weights_tensor = torch.tensor(sample_weights, dtype=torch.double) # conver to tensor
+
+# WeightedRandomSampler assigns higher sampling weights to minority classes
+sampler = WeightedRandomSampler(weights=sample_weights_tensor, num_samples=len(sample_weights_tensor), replacement=True)

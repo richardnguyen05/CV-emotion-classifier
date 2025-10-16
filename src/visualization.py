@@ -70,10 +70,8 @@ def plot_class_distribution(dataset, title="Class Distribution"):
         title : str
             Title of the plot
     """
-    # Count the number of samples for each class
-    label_counts = Counter(dataset.targets)
-    class_names = dataset.classes
-    counts = [label_counts[i] for i in range(len(class_names))]
+    # get the class count and labels for each sample in the dataset
+    counts, class_names = get_class_counts(dataset)
 
     plt.figure(figsize=(8,5))
     plt.bar(class_names, counts, color='skyblue')
