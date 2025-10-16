@@ -6,7 +6,26 @@ from torchvision import datasets, transforms
 import numpy as np
 from torch.utils.data import random_split
 
-from visualization import get_class_counts
+from collections import Counter
+
+def get_class_counts(dataset):
+    """
+    Helper function.
+    Counts the number of samples for each class within the dataset.
+    Handles ImageFolder and subset objects (for validation subset)
+    """
+    if hasattr(dataset, "targets"):
+        labels = dataset.targets
+        class_names = dataset.classes
+    elif hasattr(dataset, "dataset") and hasattr(dataset.dataset, "targets"):  # Case that object is a Subset
+        labels = [dataset.dataset.targets[i] for i in dataset.indices]  # map subset indices
+        class_names = dataset.dataset.classes
+    else:
+        raise ValueError("Dataset type not supported for get_class_counts")
+    
+    label_counts = Counter(labels)
+    counts = [label_counts[i] for i in range(len(class_names))]
+    return counts, class_names
 
 # transformations for train data
 train_transform = transforms.Compose([
@@ -42,7 +61,7 @@ counts = np.array(counts, dtype=np.float32)
 
 # WeightedRandomSampler to handle data imbalance
 train_indices = train_subset.indices
-targets_subset = np.array(train_data.targets)[train_indices] # targets for only the train_subset
+targets_subset = np.array([train_data.targets[i] for i in train_subset.indices]) # targets for only the train_subset
 sample_weights = 1.0 / counts[targets_subset]
 sample_weights_tensor = torch.tensor(sample_weights, dtype=torch.float32) # conver to tensor
 

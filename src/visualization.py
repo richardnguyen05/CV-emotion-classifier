@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
-from collections import Counter
 from datetime import datetime
 
-from preprocessing import train_loader, raw_train_loader, train_data, test_data, val_subset
+from preprocessing import train_loader, raw_train_loader, train_data, test_data, val_subset, get_class_counts
 
 def plot_samples(images, labels, class_names, n_rows=4, n_cols=4, title="Sample Images", save_path=None):
     """
@@ -21,6 +20,8 @@ def plot_samples(images, labels, class_names, n_rows=4, n_cols=4, title="Sample 
             Number of columns in the subplot grid (default=4)
         title : str
             Title of the plot (default="Sample Images")
+        save_path : str
+            Save path of the figure
     """
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols*2, n_rows*2)) # 4x4 subplot
     fig.suptitle(title, fontsize=14)
@@ -44,27 +45,17 @@ def plot_samples(images, labels, class_names, n_rows=4, n_cols=4, title="Sample 
     
     plt.show()
 
-def get_class_counts(dataset):
-    """
-    Counts the number of samples for each class within the dataset
-    Handles ImageFolder and Subset objects
-    """
-    if hasattr(dataset, "targets"):
-        labels = dataset.targets
-        class_names = dataset.classes
-    elif hasattr(dataset, "dataset") and hasattr(dataset.dataset, "targets"):  # HERE: Subset
-        labels = [dataset.dataset.targets[i] for i in dataset.indices]  # map subset indices
-        class_names = dataset.dataset.classes
-    else:
-        raise ValueError("Dataset type not supported for get_class_counts")
-    
-    label_counts = Counter(labels)
-    counts = [label_counts[i] for i in range(len(class_names))]
-    return counts, class_names
-
 def plot_class_distribution(dataset, title="Class Distribution", save_path=None):
     """
     Plots a bar graph showing the number of samples for each class in a dataset.
+
+    Parameters: 
+        dataset : torchvision.datasets.ImageFolder
+            Dataset containing images and their class labels 
+        title : str
+            str Title of the plot
+        save_path : str
+            Save path of the figure
     """
     counts, class_names = get_class_counts(dataset)
     plt.figure(figsize=(8,5))
