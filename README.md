@@ -22,4 +22,4 @@ use 2-3 conv layers, 1-2 FC layers
 data augmentation - helps generalization 
 
 #### next step
-visualize train data before vs after preprocessing. Also vis the sample size and distribution for train and test.
+sample distribution looks unbalanced with no disgust and too much happy. soln is to use a weighted loss function.

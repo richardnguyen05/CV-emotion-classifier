@@ -47,6 +47,18 @@ def plot_samples(images, labels, class_names, n_rows=4, n_cols=4, title="Sample 
         print(f"Saved plot to: {full_save_path}")
     
     plt.show()
+def get_class_counts(dataset):
+    """
+    Counts the number of samples for each class within the dataset
+
+    Parameters:
+        dataset:
+            Dataset containing images and their class labels
+    """
+    label_counts = Counter(dataset.targets) # .targets make dataset iteration faster
+    class_names = dataset.classes
+    counts = [label_counts[i] for i in range(len(class_names))]
+    return counts, class_names
 
 def plot_class_distribution(dataset, title="Class Distribution"):
     """
@@ -59,7 +71,7 @@ def plot_class_distribution(dataset, title="Class Distribution"):
             Title of the plot
     """
     # Count the number of samples for each class
-    label_counts = Counter(dataset.targets) # .targets make dataset iteration faster
+    label_counts = Counter(dataset.targets)
     class_names = dataset.classes
     counts = [label_counts[i] for i in range(len(class_names))]
 
