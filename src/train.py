@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -83,4 +84,7 @@ for epoch in range(num_epochs):
 
     epoch_loss = running_loss / len(train_loader.dataset) # normalize loss by total samples, and store that loss according to its epoch
     print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}")
+
+
+# ADD CODE FOR SAVIVG MODEL HERE (SAVE MODEL BASED ON VALIDATION LOSS)
 
