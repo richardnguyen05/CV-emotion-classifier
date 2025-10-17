@@ -2,16 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-# import matplotlib.pyplot as plt
+from tqdm.auto import tqdm # progress bar for training loop
 
 from preprocessing import train_loader, val_loader, counts
 
 
-device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported 
+device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported by pytorch
 
 # --- WEIGHTED LOSS FUNCTION --- #
-# inverse freq and normalization
-class_weights = 1.0 / counts
+class_weights = 1.0 / counts # inverse freq
 
 class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device) # convert to tensor
 criterion = nn.CrossEntropyLoss(weight=class_weights_tensor) # weight class ensures loss function prioritizes minority classes more
@@ -60,7 +59,7 @@ class EmotionCNN(nn.Module):
 
 # defining the model and optimizer
 model = EmotionCNN(num_classes=7).to(device) # move CNN model to device
-optimizer = optim.Adam(model.parameters(), lr=0.001) # using Adam as optimizer
+optimizer = optim.Adam(model.parameters(), lr=0.001) # using Adam as optimizer, learning rate=0.001
 
 # initializing variables for validation loss tracking
 train_losses = []
@@ -74,15 +73,24 @@ num_epochs = 10
 for epoch in range(num_epochs):
     model.train() # set model to training phase
     running_loss = 0.0 # reset running loss for the current epoch
+
+    # creating progress bar
+    train_pbar = tqdm(train_loader, 
+                      desc=f'Epoch {epoch+1} [Train]',
+                      leave=False,
+                      mininterval=2.0)  # only update every 2 seconds for better performance
     
-    for images, labels in train_loader:
+    for images, labels in train_pbar:
         images, labels = images.to(device), labels.to(device)
         optimizer.zero_grad() # clear previous batch gradients
         outputs = model(images)
-        loss = criterion(outputs, labels) # weighted loss
-        loss.backward()
-        optimizer.step() # using optimizer to adjust weights
+        loss = criterion(outputs, labels) # weighted loss value
+        loss.backward() # back propogation, calculates gradient for each param and stores into .grad property
+        optimizer.step() # using optimizer to adjust weights and reduce loss (opposite direction from gradient)
         running_loss += loss.item() * images.size(0)
+        
+        if train_pbar.n % 10 == 0:  # updates every 10 batches
+            train_pbar.set_postfix({'Loss': f'{loss.item():.4f}'})
 
     epoch_loss = running_loss / len(train_loader.dataset)
     train_losses.append(epoch_loss)
@@ -92,8 +100,15 @@ for epoch in range(num_epochs):
     correct = 0
     total = 0
     
+    val_pbar = tqdm(
+        val_loader,
+        desc=f"Epoch {epoch+1} [Val]",
+        leave=False,
+        mininterval=2.0  # update every 2 seconds for better performance
+    )
+
     with torch.no_grad():  # disable gradients for validation
-        for images, labels in val_loader:
+        for images, labels in val_pbar:
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
             loss = criterion(outputs, labels)
@@ -103,6 +118,10 @@ for epoch in range(num_epochs):
             _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+
+            # update validation progress
+            if val_pbar.n % 10 == 0:
+                val_pbar.set_postfix({'Val Loss': f'{loss.item():.4f}'})
     
     val_epoch_loss = val_loss / len(val_loader.dataset)
     val_accuracy = 100 * correct / total
@@ -111,13 +130,13 @@ for epoch in range(num_epochs):
     
     print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}, Val Acc: {val_accuracy:.2f}%")
     
-    # Save best model
+    # save best model
     if val_epoch_loss < best_val_loss:
         best_val_loss = val_epoch_loss
         torch.save(model.state_dict(), "../trained models/best_emotion_cnn.pth")
         print(f"Best model saved with val loss: {best_val_loss:.4f}")
 
-# Save final model
+# save final model
 torch.save(model.state_dict(), "../trained models/final_emotion_cnn.pth")
 print("Training completed! Models saved.")
 
@@ -129,7 +148,6 @@ print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
 
 # STEPS FOR NEXT TIME
 
-## CONTINUE: use tqdm to track epoch training progress
 ## NEXT: WORK ON THE PREBUILT MODEL TO COMPARE W SCRATCH
 ## ALSO: Build train_vis.py, used to visualize both model's performance metrics.
 

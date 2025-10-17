@@ -75,6 +75,8 @@ raw_train_loader = DataLoader(raw_train_data, batch_size=64, shuffle=True)
 train_loader = DataLoader(
     train_subset,
     batch_size= 64,
+    num_workers=0,       # for optimization, avoids overhead
+    pin_memory=False,
     sampler=sampler,     # WeightedRandomSampler
 )
 val_loader = DataLoader(val_subset, batch_size=64, shuffle=False)
