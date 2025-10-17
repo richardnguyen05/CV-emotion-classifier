@@ -10,8 +10,7 @@ from preprocessing import train_loader, val_loader, counts
 device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported by pytorch
 
 # --- WEIGHTED LOSS FUNCTION --- #
-class_weights = 1.0 / torch.sqrt(torch.tensor(counts, dtype=torch.float32))
-class_weights = class_weights / class_weights.sum() * len(class_weights)  # normalize
+class_weights = 1.0 / counts # inverse freq
 
 class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device) # convert to tensor
 criterion = nn.CrossEntropyLoss(weight=class_weights_tensor) # weight class ensures loss function prioritizes minority classes more
@@ -65,7 +64,7 @@ class DeeperEmotionCNN(nn.Module):
         
         # First Conv Block
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)   # 48x48 → 48x48
-        self.conv2 = nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1)  # 48x48 → 48x48 (same channels for depth)
+        self.conv2 = nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1)  # 48x48 → 48x48 (same channels for greater depth at each conv block)
         self.pool1 = nn.MaxPool2d(2, 2)  # 48x48 → 24x24 (reduces spacial size by half)
 
         # Second Conv Block
@@ -82,12 +81,6 @@ class DeeperEmotionCNN(nn.Module):
         self.conv7 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1) # 6x6 → 6x6
         self.conv8 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1) # 6x6 → 6x6
         self.pool4 = nn.MaxPool2d(2, 2)  # 6x6 → 3x3
-
-        # Batch Normalization Layers
-        self.bn1 = nn.BatchNorm2d(32)   # for conv1/conv2 outputs
-        self.bn2 = nn.BatchNorm2d(64)   # for conv3/conv4 outputs  
-        self.bn3 = nn.BatchNorm2d(128)  # for conv5/conv6 outputs
-        self.bn4 = nn.BatchNorm2d(256)  # for conv7/conv8 outputs
 
         # Fully Connected Layers
         # Input: 256 channels * 3x3 spatial size = 256 * 3 * 3 = 2304 features
@@ -132,7 +125,7 @@ class DeeperEmotionCNN(nn.Module):
 
 # defining the model and optimizer
 model = DeeperEmotionCNN(num_classes=7).to(device) # move CNN model to device
-optimizer = optim.Adam(model.parameters(), lr=0.0005) # using Adam as optimizer, learning rate=0.0005 (lower learning rate for deeper models)
+optimizer = optim.Adam(model.parameters(), lr=0.001) # using Adam as optimizer, learning rate=0.001
 
 # initializing variables for validation loss tracking
 train_losses = []

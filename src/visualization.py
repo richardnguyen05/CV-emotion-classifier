@@ -76,23 +76,23 @@ def plot_class_distribution(dataset, title="Class Distribution", save_path=None)
 # train data before preprocessing
 print("Visualizing TRAIN DATA before preprocessing...")
 images, labels = next(iter(raw_train_loader))
-plot_samples(images, labels, train_data.classes, title="TRAIN DATA before preprocessing", save_path="../plots/raw/raw_train_fig")
+plot_samples(images, labels, train_data.classes, title="TRAIN DATA before preprocessing (FER 2013)", save_path="../plots/raw/raw_train_fig")
 
 # train data after preprocessing
 print("Visualizing TRAIN DATA after preprocessing...")
 images, labels = next(iter(train_loader))
-plot_samples(images, labels, train_data.classes, title="TRAIN DATA after preprocessing", save_path="../plots/preprocessed/preproc_train_fig")
+plot_samples(images, labels, train_data.classes, title="TRAIN DATA after preprocessing (FER 2013)", save_path="../plots/preprocessed/preproc_train_fig")
 
 # train class distribution
 print("Visualizing TRAIN class distribution...")
-plot_class_distribution(train_data, title="TRAIN Class Distribution", save_path="../plots/class distribution/train_class_dis_fig")
+plot_class_distribution(train_data, title="TRAIN Class Distribution (FER 2013)", save_path="../plots/class distribution/train_class_dis_fig")
 
 # val class distribution
 print("Visualizing VAL class distribution...")
-plot_class_distribution(val_subset, title="VAL Class Distribution", save_path="../plots/class distribution/val_class_dis_fig")
+plot_class_distribution(val_subset, title="VAL Class Distribution (FER 2013)", save_path="../plots/class distribution/val_class_dis_fig")
 
 # test class distribution
 print("Visualizing TEST class distribution...")
-plot_class_distribution(test_data, title="TEST Class Distribution", save_path="../plots/class distribution/test_class_dis_fig")
+plot_class_distribution(test_data, title="TEST Class Distribution (FER 2013)", save_path="../plots/class distribution/test_class_dis_fig")
 
 print("Visualization complete.")
