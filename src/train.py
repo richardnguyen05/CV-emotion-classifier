@@ -146,8 +146,5 @@ print(f"Best Validation Loss: {best_val_loss:.4f}")
 print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
 
 
-# STEPS FOR NEXT TIME
 
-## NEXT: WORK ON THE PREBUILT MODEL TO COMPARE W SCRATCH
-## ALSO: Build train_vis.py, used to visualize both model's performance metrics.
 
