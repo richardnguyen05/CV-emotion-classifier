@@ -179,8 +179,11 @@ for epoch in range(num_epochs):
     if val_epoch_loss < best_val_loss:
         best_val_loss = val_epoch_loss
         torch.save(model.state_dict(), best_model_path)
-        with open("../trained models/best validation loss/val_loss_scratch.txt", "w") as f: # writing to new txt file and saving best val loss
+        with open("../trained models/best validation loss and accuracy/val_loss_scratch.txt", "w") as f: # writing to new txt file and saving best val loss
             f.write(f"{best_val_loss:.6f}")
+        with open("../trained models/best validation loss and accuracy/val_accuracy_scratch.txt", "w") as f: # saving best accuracy
+            best_val_accuracy = val_accuracy
+            f.write(f"{best_val_accuracy:.6f}")
 
         print(f"Best model saved with val loss: {best_val_loss:.4f}")
         print(f"Best val loss saved in: {best_val_loss_path}")
@@ -203,10 +206,13 @@ recall = recall_score(all_labels, all_preds, average='weighted')
 f1 = f1_score(all_labels, all_preds, average='weighted')
 
 # print final results
-print(f"\nFinal Results:")
-print(f"Best Validation Loss: {best_val_loss:.4f}")
+print(f"\nFinal Results (from the run):")
 print(f"Best Validation Accuracy: {max(val_accuracies):.2f}%")
 print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
+
+print(f"\nFinal Results (all-time):")
+print(f"Best Validation Loss: {best_val_loss:.4f}")
+print(f"Best Validation Accuracy: {best_val_accuracy:.2f}%")
 
 print(f"Validation Precision: {precision:.4f}")
 print(f"Validation Recall: {recall:.4f}")
