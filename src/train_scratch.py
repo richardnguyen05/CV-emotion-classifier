@@ -108,6 +108,7 @@ else:
             best_val_accuracy = float(f.read().strip())
     else:
         best_val_accuracy = 0.0 # there is no saved accuracy
+        print("No previous best accuracy found.")
 
 
 # initializing variables for validation loss tracking
