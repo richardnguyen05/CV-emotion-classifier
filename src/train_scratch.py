@@ -72,6 +72,7 @@ checkpoint_model_path = "../trained models/checkpoints/scratch/checkpoint_model_
 checkpoint_optimizer_path = "../trained models/checkpoints/scratch/checkpoint_optimizer_scratch.pth"
 checkpoint_val_loss_path = "../trained models/checkpoints/scratch/checkpoint_val_loss_scratch.txt"
 
+# load checkpoint if it exists
 if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer_path) and os.path.exists(checkpoint_val_loss_path):
     # load previous best model weights
     state_dict = torch.load(checkpoint_model_path, map_location=device, weights_only=True)
@@ -90,9 +91,16 @@ if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer
     
     print("Continuing training at loaded model. To restart training, delete all contents in checkpoints scratch folder."
             "This includes:\n - checkpoint model\n - checkpoint optimizer state\n - checkpoint val loss")
-else:   
-    best_val_loss = float('inf')  # no previous checkpoint, start with infinity loss so if-comparison in training loop works 
-    print("No previous checkpoint found. Training from scratch.")
+else:
+    # if no checkpoint exists, try to load existing best model val loss
+    if os.path.exists(best_val_loss_path):
+        with open(best_val_loss_path, "r") as f:
+            best_val_loss = float(f.read().strip())
+        print(f"No checkpoint found. Loaded existing best val loss: {best_val_loss:.6f}")
+    else:
+        best_val_loss = float('inf')  # starting from scratch, start with infinity loss so if-comparison in training loop works
+        print("No checkpoint or previous best found. Training from scratch.")
+
 
 # initializing variables for validation loss tracking
 train_losses = []
@@ -165,7 +173,7 @@ for epoch in range(num_epochs):
     # save checkpoint model
     torch.save(model.state_dict(), checkpoint_model_path)
     torch.save(optimizer.state_dict(), checkpoint_optimizer_path) # enables resumed training
-    with open("../trained models/checkpoints/checkpoint_val_loss_scratch.txt", "w") as f: # writing to new txt file and saving checkpoint val loss
+    with open("../trained models/checkpoints/scratch/checkpoint_val_loss_scratch.txt", "w") as f: # writing to new txt file and saving checkpoint val loss
             f.write(f"{best_val_loss:.6f}")
     # save best model
     if val_epoch_loss < best_val_loss:
