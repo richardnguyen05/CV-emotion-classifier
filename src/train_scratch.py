@@ -1,8 +1,10 @@
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from tqdm.auto import tqdm # progress bar for training loop
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 from preprocessing import train_loader, val_loader, counts
 
@@ -62,11 +64,33 @@ class EmotionCNN(nn.Module):
 model = EmotionCNN(num_classes=7).to(device) # move CNN model to device
 optimizer = optim.Adam(model.parameters(), lr=0.001) # using Adam as optimizer, learning rate=0.001
 
+# load previous best model and val loss if exists
+best_model_path = "../trained models/best_emotion_cnn_scratch.pth"
+optimizer_path = "../trained models/optimizer state/optimizer_scratch.pth"
+best_val_loss_path = "../trained models/best validation loss/val_loss_scratch.txt"
+
+if os.path.exists(best_model_path) and os.path.exists(best_val_loss_path):
+    # load previous best model weights
+    model.load_state_dict(torch.load(best_model_path, map_location=device))
+
+    with open(best_val_loss_path, "r") as f:
+        best_val_loss = float(f.read().strip())
+    print(f"Loaded previous best model with val loss: {best_val_loss:.6f}")
+
+    # load optimizer state to continue training momentum
+    if os.path.exists(optimizer_path):
+        optimizer.load_state_dict(torch.load(optimizer_path, map_location=device))
+        print("Loaded previous optimizer state.")
+    
+    print("Continuing training at loaded model.")
+else:
+    best_val_loss = float('inf')  # no previous best, start with infinity loss so if-comparison in training loop works 
+    print("No previous checkpoint found. Training from scratch.")
+
 # initializing variables for validation loss tracking
 train_losses = []
 val_losses = []
-val_accuracies = []
-best_val_loss = float('inf') # start with infinitely bad loss so if-comparison in training loop works 
+val_accuracies = [] # array for tracking val accuracies across all epochs
 
 num_epochs = 15
 
@@ -134,19 +158,41 @@ for epoch in range(num_epochs):
     # save best model
     if val_epoch_loss < best_val_loss:
         best_val_loss = val_epoch_loss
-        torch.save(model.state_dict(), "../trained models/best_emotion_cnn_scratch.pth")
+        torch.save(model.state_dict(), best_model_path)
+        torch.save(optimizer.state_dict(), optimizer_path) # saving optimizer state, enables resume training
+        with open("../trained models/best validation loss/val_loss_scratch.txt", "w") as f: # writing to new txt file and saving best val loss
+            f.write(f"{best_val_loss:.6f}")
+
         print(f"Best model saved with val loss: {best_val_loss:.4f}")
 
-# save final model
-torch.save(model.state_dict(), "../trained models/final_emotion_cnn_scratch.pth")
-print("Training completed! Models saved.")
+# compute precision, recall, f1 on entire validation set
+all_preds = []
+all_labels = []
 
-# Print final results
+model.eval()
+with torch.no_grad():
+    for images, labels in val_loader:
+        images, labels = images.to(device), labels.to(device)
+        outputs = model(images)
+        _, predicted = torch.max(outputs, 1)
+        all_preds.extend(predicted.cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
+
+precision = precision_score(all_labels, all_preds, average='weighted')  # weighted accounts for class imbalance
+recall = recall_score(all_labels, all_preds, average='weighted')
+f1 = f1_score(all_labels, all_preds, average='weighted')
+
+# print final results
 print(f"\nFinal Results:")
 print(f"Best Validation Loss: {best_val_loss:.4f}")
+print(f"Best Validation Accuracy: {max(val_accuracies)}")
 print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
 
-# make sure to print precision, recall, and f1 score (weighted accuracy?)
+print(f"Validation Precision: {precision:.4f}")
+print(f"Validation Recall: {recall:.4f}")
+print(f"Validation F1 Score: {f1:.4f}")
+
+# make sure to print precision, recall, and f1 score
 
 
 
