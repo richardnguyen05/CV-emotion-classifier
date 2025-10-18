@@ -65,13 +65,12 @@ optimizer = optim.Adam(model.parameters(), lr=0.001) # using Adam as optimizer, 
 
 # load previous best model and val loss if exists
 best_model_path = "../trained models/best_emotion_cnn_scratch.pth"
-optimizer_path = "../trained models/optimizer state/optimizer_scratch.pth"
 best_val_loss_path = "../trained models/best validation loss/val_loss_scratch.txt"
 
 # checkpoint paths
-checkpoint_model_path = "../trained models/checkpoints/checkpoint_model_scratch.pth"
-checkpoint_optimizer_path = "../trained models/checkpoints/checkpoint_optimizer_scratch.pth"
-checkpoint_val_loss_path = "../trained models/checkpoints/checkpoint_val_loss_scratch.txt"
+checkpoint_model_path = "../trained models/checkpoints/scratch/checkpoint_model_scratch.pth"
+checkpoint_optimizer_path = "../trained models/checkpoints/scratch/checkpoint_optimizer_scratch.pth"
+checkpoint_val_loss_path = "../trained models/checkpoints/scratch/checkpoint_val_loss_scratch.txt"
 
 if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer_path) and os.path.exists(checkpoint_val_loss_path):
     # load previous best model weights
@@ -89,7 +88,7 @@ if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer
 
         print("Loaded previous optimizer state.")
     
-    print("Continuing training at loaded model. To restart training, delete all contents in checkpoints folder."
+    print("Continuing training at loaded model. To restart training, delete all contents in checkpoints scratch folder."
             "This includes:\n - checkpoint model\n - checkpoint optimizer state\n - checkpoint val loss")
 else:   
     best_val_loss = float('inf')  # no previous checkpoint, start with infinity loss so if-comparison in training loop works 
@@ -165,19 +164,17 @@ for epoch in range(num_epochs):
     
     # save checkpoint model
     torch.save(model.state_dict(), checkpoint_model_path)
-    torch.save(optimizer.state_dict(), checkpoint_optimizer_path)
+    torch.save(optimizer.state_dict(), checkpoint_optimizer_path) # enables resumed training
     with open("../trained models/checkpoints/checkpoint_val_loss_scratch.txt", "w") as f: # writing to new txt file and saving checkpoint val loss
             f.write(f"{best_val_loss:.6f}")
     # save best model
     if val_epoch_loss < best_val_loss:
         best_val_loss = val_epoch_loss
         torch.save(model.state_dict(), best_model_path)
-        torch.save(optimizer.state_dict(), optimizer_path) # saving optimizer state, enables resume training
         with open("../trained models/best validation loss/val_loss_scratch.txt", "w") as f: # writing to new txt file and saving best val loss
             f.write(f"{best_val_loss:.6f}")
 
         print(f"Best model saved with val loss: {best_val_loss:.4f}")
-        print(f"Optimizer state saved in: {optimizer_path}")
         print(f"Best val loss saved in: {best_val_loss_path}")
 
 # compute precision, recall, f1 on entire validation set
