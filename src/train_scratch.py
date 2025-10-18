@@ -66,6 +66,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001) # using Adam as optimizer, 
 # load previous best model and val loss if exists
 best_model_path = "../trained models/best_emotion_cnn_scratch.pth"
 best_val_loss_path = "../trained models/best validation loss/val_loss_scratch.txt"
+best_val_accuracy_path = "../trained models/best validation accuracy/val_accuracy_scratch.txt"
 
 # checkpoint paths
 checkpoint_model_path = "../trained models/checkpoints/scratch/checkpoint_model_scratch.pth"
@@ -74,7 +75,7 @@ checkpoint_val_loss_path = "../trained models/checkpoints/scratch/checkpoint_val
 
 # load checkpoint if it exists
 if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer_path) and os.path.exists(checkpoint_val_loss_path):
-    # load previous best model weights
+    # load previous checkpoint model weights
     state_dict = torch.load(checkpoint_model_path, map_location=device, weights_only=True)
     model.load_state_dict(state_dict)
 
@@ -100,6 +101,13 @@ else:
     else:
         best_val_loss = float('inf')  # starting from scratch, start with infinity loss so if-comparison in training loop works
         print("No checkpoint or previous best found. Training from scratch.")
+    
+    # load best accuracy from file if it exists
+    if os.path.exists(best_val_accuracy_path):
+        with open(best_val_accuracy_path, "r") as f:
+            best_val_accuracy = float(f.read().strip())
+    else:
+        best_val_accuracy = 0.0 # there is no saved accuracy
 
 
 # initializing variables for validation loss tracking
@@ -178,15 +186,16 @@ for epoch in range(num_epochs):
     # save best model
     if val_epoch_loss < best_val_loss:
         best_val_loss = val_epoch_loss
+        best_val_accuracy = val_accuracy
         torch.save(model.state_dict(), best_model_path)
-        with open("../trained models/best validation loss and accuracy/val_loss_scratch.txt", "w") as f: # writing to new txt file and saving best val loss
+        with open("../trained models/best validation loss/val_loss_scratch.txt", "w") as f: # writing to new txt file and saving best val loss
             f.write(f"{best_val_loss:.6f}")
-        with open("../trained models/best validation loss and accuracy/val_accuracy_scratch.txt", "w") as f: # saving best accuracy
-            best_val_accuracy = val_accuracy
-            f.write(f"{best_val_accuracy:.6f}")
+        with open("../trained models/best validation accuracy/val_accuracy_scratch.txt", "w") as f: # writing to new txt file and saving best accuracy
+            f.write(f"{best_val_accuracy:.2f}")
 
         print(f"Best model saved with val loss: {best_val_loss:.4f}")
         print(f"Best val loss saved in: {best_val_loss_path}")
+        print(f"Best accuracy of {best_val_accuracy:.2f}% saved in: {best_val_accuracy_path}")
 
 # compute precision, recall, f1 on entire validation set
 all_preds = []
@@ -206,11 +215,11 @@ recall = recall_score(all_labels, all_preds, average='weighted')
 f1 = f1_score(all_labels, all_preds, average='weighted')
 
 # print final results
-print(f"\nFinal Results (from the run):")
+print(f"\nFinal Results of the Run:")
 print(f"Best Validation Accuracy: {max(val_accuracies):.2f}%")
 print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
 
-print(f"\nFinal Results (all-time):")
+print(f"\nAll-Time Best Results:")
 print(f"Best Validation Loss: {best_val_loss:.4f}")
 print(f"Best Validation Accuracy: {best_val_accuracy:.2f}%")
 
