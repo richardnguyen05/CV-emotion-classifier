@@ -88,7 +88,7 @@ if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer
 
         print("Loaded previous optimizer state.")
     
-    print("Continuing training at loaded model. To restart training, delete all contents in checkpoints scratch folder."
+    print("Continuing training at loaded model. To restart training, delete all contents in checkpoints SCRATCH folder."
             "This includes:\n - checkpoint model\n - checkpoint optimizer state\n - checkpoint val loss")
 else:
     # if no checkpoint exists, try to load existing best model val loss
@@ -163,7 +163,7 @@ for epoch in range(num_epochs):
                 val_pbar.set_postfix({'Val Loss': f'{loss.item():.4f}'})
     
     val_epoch_loss = val_loss / len(val_loader.dataset)
-    val_accuracy = 100 * correct / total
+    val_accuracy = correct / total * 100
     val_losses.append(val_epoch_loss)
     val_accuracies.append(val_accuracy)
     
@@ -173,7 +173,7 @@ for epoch in range(num_epochs):
     torch.save(model.state_dict(), checkpoint_model_path)
     torch.save(optimizer.state_dict(), checkpoint_optimizer_path) # enables resumed training
     with open("../trained models/checkpoints/scratch/checkpoint_val_loss_scratch.txt", "w") as f: # writing to new txt file and saving checkpoint val loss
-            f.write(f"{best_val_loss:.6f}")
+            f.write(f"{val_epoch_loss:.6f}")
     # save best model
     if val_epoch_loss < best_val_loss:
         best_val_loss = val_epoch_loss
@@ -188,3 +188,8 @@ for epoch in range(num_epochs):
 print(f"\nFinal Results of the Run:")
 print(f"Best Validation Accuracy: {max(val_accuracies):.2f}%")
 print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
+print(f"All Validation Accuracies: {val_accuracies}")
+
+print(f"\nLosses for all epochs:")
+print(f"Train: {train_losses}")
+print(f"Validation: {val_losses}")
