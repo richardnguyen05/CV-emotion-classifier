@@ -4,7 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from tqdm.auto import tqdm # progress bar for training loop
-from sklearn.metrics import precision_score, recall_score, f1_score
 
 from preprocessing import train_loader, val_loader, counts
 
@@ -185,28 +184,7 @@ for epoch in range(num_epochs):
         print(f"Best model saved with val loss: {best_val_loss:.4f}")
         print(f"Best val loss saved in: {best_val_loss_path}")
 
-# compute precision, recall, f1 on entire validation set
-all_preds = []
-all_labels = []
-
-model.eval()
-with torch.no_grad():
-    for images, labels in val_loader:
-        images, labels = images.to(device), labels.to(device)
-        outputs = model(images)
-        _, predicted = torch.max(outputs, 1)
-        all_preds.extend(predicted.cpu().numpy())
-        all_labels.extend(labels.cpu().numpy())
-
-precision = precision_score(all_labels, all_preds, average='weighted')  # weighted accounts for class imbalance
-recall = recall_score(all_labels, all_preds, average='weighted')
-f1 = f1_score(all_labels, all_preds, average='weighted')
-
 # print final results
 print(f"\nFinal Results of the Run:")
 print(f"Best Validation Accuracy: {max(val_accuracies):.2f}%")
 print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
-
-print(f"\nValidation Precision: {precision:.4f}")
-print(f"Validation Recall: {recall:.4f}")
-print(f"Validation F1 Score: {f1:.4f}")

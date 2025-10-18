@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import models
 
+from preprocessing import train_loader, val_loader, counts
+
 device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported by pytorch
 
 class EmotionResNet18(nn.Module):
@@ -44,3 +46,9 @@ for name, param in model.backbone.named_parameters():
         param.requires_grad = True # unfreezing all of backbone risks overfitting for small-medium sized datasets
 
 optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-5) # lower lr prevents destroying weights during fine-tuning
+
+# --- WEIGHTED LOSS FUNCTION --- #
+class_weights = 1.0 / torch.sqrt(torch.tensor(counts, dtype=torch.float32)) # sqrt of inv freq weighting
+
+class_weights_tensor = class_weights.clone().detach().to(device)
+criterion = nn.CrossEntropyLoss(weight=class_weights_tensor) # weight class ensures loss function prioritizes minority classes more
