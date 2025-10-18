@@ -11,12 +11,6 @@ from preprocessing import train_loader, val_loader, counts
 
 device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported by pytorch
 
-# --- WEIGHTED LOSS FUNCTION --- #
-class_weights = 1.0 / torch.sqrt(torch.tensor(counts, dtype=torch.float32)) # sqrt of inv freq weighting
-
-class_weights_tensor = class_weights.clone().detach().to(device)
-criterion = nn.CrossEntropyLoss(weight=class_weights_tensor) # weight class ensures loss function prioritizes minority classes more
-
 # CNN MODEL
 class EmotionCNN(nn.Module):
     def __init__(self, num_classes=7):
@@ -25,11 +19,11 @@ class EmotionCNN(nn.Module):
         # Feature extraction layers
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)   # 48x48 → 48x48 (padding of 1 keeps spatial size the same)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)  # 48x48 → 48x48
-        self.pool1 = nn.MaxPool2d(2, 2)  # 48x48 → 24x24 (pool1 reduces spacial size by half)
+        self.pool1 = nn.MaxPool2d(2, 2)  # 48x48 → 24x24 (max pool reduces spacial size by half whilst keeping most important features)
 
         self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1) # 24x24 → 24x24
         self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)# 24x24 → 24x24
-        self.pool2 = nn.MaxPool2d(2, 2)  # 24x24 → 12x12
+        self.pool2 = nn.MaxPool2d(2, 2)  # 24x24 → 12x12, max pool
 
         # Fully connected layers (linearizing 2d CNN)
         self.fc1 = nn.Linear(128 * 12 * 12, 512) # reducing features to 512
@@ -62,6 +56,12 @@ class EmotionCNN(nn.Module):
 # defining the model and optimizer
 model = EmotionCNN(num_classes=7).to(device) # move CNN model to device
 optimizer = optim.Adam(model.parameters(), lr=0.001) # using Adam as optimizer, learning rate=0.001
+
+# --- WEIGHTED LOSS FUNCTION --- #
+class_weights = 1.0 / torch.sqrt(torch.tensor(counts, dtype=torch.float32)) # sqrt of inv freq weighting
+
+class_weights_tensor = class_weights.clone().detach().to(device)
+criterion = nn.CrossEntropyLoss(weight=class_weights_tensor) # weight class ensures loss function prioritizes minority classes more
 
 # load previous best model and val loss if exists
 best_model_path = "../trained models/best_emotion_cnn_scratch.pth"
@@ -206,7 +206,6 @@ f1 = f1_score(all_labels, all_preds, average='weighted')
 print(f"\nFinal Results of the Run:")
 print(f"Best Validation Accuracy: {max(val_accuracies):.2f}%")
 print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
-print(f"\n All-Time Best Validation Loss: {best_val_loss:.4f}")
 
 print(f"\nValidation Precision: {precision:.4f}")
 print(f"Validation Recall: {recall:.4f}")
