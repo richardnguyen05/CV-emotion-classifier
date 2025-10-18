@@ -10,7 +10,8 @@ from preprocessing import train_loader, val_loader, counts
 device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported by pytorch
 
 # --- WEIGHTED LOSS FUNCTION --- #
-class_weights = 1.0 / counts # inverse freq
+# class_weights = 1.0 / counts # inverse freq
+class_weights = 1.0 / torch.sqrt(torch.tensor(counts, dtype=torch.float32)) # sqrt of inv freq weighting
 
 class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device) # convert to tensor
 criterion = nn.CrossEntropyLoss(weight=class_weights_tensor) # weight class ensures loss function prioritizes minority classes more
@@ -144,6 +145,8 @@ print("Training completed! Models saved.")
 print(f"\nFinal Results:")
 print(f"Best Validation Loss: {best_val_loss:.4f}")
 print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
+
+# make sure to print precision, recall, and f1 score (weighted accuracy?)
 
 
 
