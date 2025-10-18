@@ -12,10 +12,9 @@ from preprocessing import train_loader, val_loader, counts
 device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported by pytorch
 
 # --- WEIGHTED LOSS FUNCTION --- #
-# class_weights = 1.0 / counts # inverse freq
 class_weights = 1.0 / torch.sqrt(torch.tensor(counts, dtype=torch.float32)) # sqrt of inv freq weighting
 
-class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device) # convert to tensor
+class_weights_tensor = class_weights.clone().detach().to(device)
 criterion = nn.CrossEntropyLoss(weight=class_weights_tensor) # weight class ensures loss function prioritizes minority classes more
 
 # CNN MODEL
@@ -71,7 +70,8 @@ best_val_loss_path = "../trained models/best validation loss/val_loss_scratch.tx
 
 if os.path.exists(best_model_path) and os.path.exists(best_val_loss_path):
     # load previous best model weights
-    model.load_state_dict(torch.load(best_model_path, map_location=device))
+    state_dict = torch.load(best_model_path, map_location=device, weights_only=True)
+    model.load_state_dict(state_dict)
 
     with open(best_val_loss_path, "r") as f:
         best_val_loss = float(f.read().strip())
@@ -79,10 +79,12 @@ if os.path.exists(best_model_path) and os.path.exists(best_val_loss_path):
 
     # load optimizer state to continue training momentum
     if os.path.exists(optimizer_path):
-        optimizer.load_state_dict(torch.load(optimizer_path, map_location=device))
+        optimizer_state = torch.load(optimizer_path, map_location=device, weights_only=True)
+        optimizer.load_state_dict(optimizer_state)
+
         print("Loaded previous optimizer state.")
     
-    print("Continuing training at loaded model.")
+    print("Continuing training at loaded model. To restart training:\n - delete model\n - optimizer state\n - best val loss ")
 else:
     best_val_loss = float('inf')  # no previous best, start with infinity loss so if-comparison in training loop works 
     print("No previous checkpoint found. Training from scratch.")
@@ -164,6 +166,8 @@ for epoch in range(num_epochs):
             f.write(f"{best_val_loss:.6f}")
 
         print(f"Best model saved with val loss: {best_val_loss:.4f}")
+        print(f"Optimizer state saved in: {optimizer_path}")
+        print(f"Best val loss saved in: {best_val_loss_path}")
 
 # compute precision, recall, f1 on entire validation set
 all_preds = []
@@ -185,15 +189,9 @@ f1 = f1_score(all_labels, all_preds, average='weighted')
 # print final results
 print(f"\nFinal Results:")
 print(f"Best Validation Loss: {best_val_loss:.4f}")
-print(f"Best Validation Accuracy: {max(val_accuracies)}")
+print(f"Best Validation Accuracy: {max(val_accuracies):.2f}%")
 print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
 
 print(f"Validation Precision: {precision:.4f}")
 print(f"Validation Recall: {recall:.4f}")
 print(f"Validation F1 Score: {f1:.4f}")
-
-# make sure to print precision, recall, and f1 score
-
-
-
-
