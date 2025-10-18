@@ -114,10 +114,7 @@ for epoch in range(num_epochs):
     running_loss = 0.0 # reset running loss for the current epoch
 
     # creating progress bar
-    train_pbar = tqdm(train_loader, 
-                      desc=f'Epoch {epoch+1} [Train]',
-                      leave=False,
-                      mininterval=2.0)  # only update every 2 seconds for better performance
+    train_pbar = tqdm(train_loader, desc=f'Epoch {epoch+1} [Train]', leave=False)
     
     for images, labels in train_pbar:
         images, labels = images.to(device), labels.to(device)
@@ -128,8 +125,8 @@ for epoch in range(num_epochs):
         optimizer.step() # using optimizer to adjust weights and reduce loss (opposite direction from gradient)
         running_loss += loss.item() * images.size(0)
         
-        if train_pbar.n % 10 == 0:  # updates every 10 batches
-            train_pbar.set_postfix({'Loss': f'{loss.item():.4f}'})
+        # update progress bar
+        train_pbar.set_postfix({'Loss': f'{loss.item():.4f}'})
 
     epoch_loss = running_loss / len(train_loader.dataset)
     train_losses.append(epoch_loss)
@@ -141,10 +138,7 @@ for epoch in range(num_epochs):
     
     val_pbar = tqdm(
         val_loader,
-        desc=f"Epoch {epoch+1} [Val]",
-        leave=False,
-        mininterval=2.0  # update every 2 seconds for better performance
-    )
+        desc=f"Epoch {epoch+1} [Val]", leave=False)
 
     with torch.no_grad():  # disable gradients for validation
         for images, labels in val_pbar:
@@ -157,10 +151,9 @@ for epoch in range(num_epochs):
             _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-
-            # update validation progress
-            if val_pbar.n % 10 == 0:
-                val_pbar.set_postfix({'Val Loss': f'{loss.item():.4f}'})
+            
+            # update progress bar
+            val_pbar.set_postfix({'Val Loss': f'{loss.item():.4f}'})
     
     val_epoch_loss = val_loss / len(val_loader.dataset)
     val_accuracy = correct / total * 100
