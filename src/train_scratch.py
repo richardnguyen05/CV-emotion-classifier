@@ -68,7 +68,7 @@ val_losses = []
 val_accuracies = []
 best_val_loss = float('inf') # start with infinitely bad loss so if-comparison in training loop works 
 
-num_epochs = 10
+num_epochs = 15
 
 # Training loop with validation
 for epoch in range(num_epochs):
