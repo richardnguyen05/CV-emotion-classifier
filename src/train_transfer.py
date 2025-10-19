@@ -20,10 +20,6 @@ class EmotionEfficientNetB0(nn.Module):
             for param in self.backbone.parameters():
                 param.requires_grad = False
 
-        # conv layer 1
-        self.backbone.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False) # modified input to accept grayscale instead of RGB
-        # output feature map = [24, 24]
-
         # replace the classifier (fc layer)
         in_features = self.backbone.classifier[1].in_features  # fc layer in EfficientNet
         self.backbone.classifier = nn.Sequential(
