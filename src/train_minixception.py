@@ -1,7 +1,6 @@
 import os
 import torch
 import torch.nn as nn
-from torchvision import models
 from tqdm.auto import tqdm
 
 from preprocessing import train_loader, val_loader, counts
@@ -9,36 +8,36 @@ from preprocessing import train_loader, val_loader, counts
 device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported by pytorch
 
 class MiniXception(nn.Module):
-    def __init__(self, num_classes=7, freeze_backbone=True):
+    def __init__(self, num_classes=7):
         super(MiniXception, self).__init__()
 
-        def conv_block(in_ch, out_ch, pool=True):
+        def conv_block(in_ch, out_ch, pool=True): # defining a convolution block. we have 2 conv layers per block, set pool to true to enable max pool
             layers = [
-                nn.Conv2d(in_ch, out_ch, 3, padding=1),
-                nn.BatchNorm2d(out_ch),
+                nn.Conv2d(in_ch, out_ch, 3, padding=1), # kernel size of 3, padding of 1 keeps spatial size same
+                nn.BatchNorm2d(out_ch), # normalize ouput channel
                 nn.ReLU(inplace=True),
                 nn.Conv2d(out_ch, out_ch, 3, padding=1),
                 nn.BatchNorm2d(out_ch),
                 nn.ReLU(inplace=True)
             ]
             if pool:
-                layers.append(nn.MaxPool2d(2))
+                layers.append(nn.MaxPool2d(2)) # reduce spacial size by half after each block
             return nn.Sequential(*layers)
 
         self.features = nn.Sequential(
             conv_block(1, 8),   # input is grayscale 1 channel
             conv_block(8, 16),
             conv_block(16, 32),
-            conv_block(32, 64)
+            conv_block(32, 64) # with each conv block, feature map is doubled
         )
 
         self.global_pool = nn.AdaptiveAvgPool2d(1)
-        self.fc = nn.Linear(64, num_classes)
+        self.fc = nn.Linear(64, num_classes) # fc layer produces raw logits (7) for emotion classes
 
     def forward(self, x):
-        x = self.features(x)
-        x = self.global_pool(x)
-        x = x.view(x.size(0), -1)
+        x = self.features(x) # pass input through all conv blocks
+        x = self.global_pool(x) # apply global pool, reducing feature map to 1x1 shape
+        x = x.view(x.size(0), -1) # flatten, so we can pass it to fc layer
         x = self.fc(x)
         return x
 
