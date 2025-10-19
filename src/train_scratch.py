@@ -89,7 +89,7 @@ if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer
         print("Loaded previous optimizer state.")
     
     print("Continuing training at loaded model. To restart training, delete all contents in checkpoints SCRATCH folder."
-            "This includes:\n - checkpoint model\n - checkpoint optimizer state\n - checkpoint val loss")
+            " This includes:\n - checkpoint model\n - checkpoint optimizer state\n - checkpoint val loss")
 else:
     # if no checkpoint exists, try to load existing best model val loss
     if os.path.exists(best_val_loss_path):
@@ -181,8 +181,8 @@ for epoch in range(num_epochs):
 print(f"\nFinal Results of the Run:")
 print(f"Best Validation Accuracy: {max(val_accuracies):.2f}%")
 print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
-print(f"All Validation Accuracies: {val_accuracies}")
+print(f"All Validation Accuracies: {[f'{val_accuracy:.2f}' for val_accuracy in val_accuracies]}")
 
 print(f"\nLosses for all epochs:")
-print(f"Train: {train_losses}")
-print(f"Validation: {val_losses}")
+print(f"Train: {[f'{loss:.2f}' for loss in train_losses]}")
+print(f"Validation: {[f'{loss:.2f}' for loss in val_losses]}")
