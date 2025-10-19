@@ -2,7 +2,7 @@ import os
 import torch
 import torch.nn as nn
 from torchvision import models
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from preprocessing import train_loader, val_loader, counts
 
@@ -148,7 +148,7 @@ for epoch in range(num_epochs):
     val_losses.append(val_epoch_loss)
     val_accuracies.append(val_accuracy)
 
-    print(f"Epoch [{epoch+1/{num_epochs}}], Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}, Val Acc: {val_accuracy:.2f}")
+    print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}, Val Acc: {val_accuracy:.2f}%")
 
     # save checkpoint model
     torch.save(model.state_dict(), checkpoint_model_path)

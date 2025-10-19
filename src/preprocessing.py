@@ -1,4 +1,3 @@
-import os
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import WeightedRandomSampler
@@ -70,14 +69,12 @@ sample_weights_tensor = torch.tensor(sample_weights, dtype=torch.float32) # conv
 # WeightedRandomSampler assigns higher sampling weights to minority classes
 sampler = WeightedRandomSampler(weights=sample_weights_tensor, num_samples=len(sample_weights_tensor), replacement=True)
 
-num_workers = min(8, os.cpu_count() // 2)  # getting balanced num of workers to speed up training
-
 # creating DataLoader
 raw_train_loader = DataLoader(raw_train_data, batch_size=64, shuffle=True)
 train_loader = DataLoader(
     train_subset,
     batch_size= 64,
-    num_workers=num_workers,       # for optimization
+    num_workers=0,
     pin_memory=False,
     sampler=sampler,     # WeightedRandomSampler
 )
