@@ -4,49 +4,48 @@ import torch.nn as nn
 from torchvision import models
 from tqdm.auto import tqdm
 
-from preprocessing import train_loader_rgb, val_loader_rgb, train_loader, val_loader, counts
+from preprocessing import train_loader, val_loader, counts
 
 device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported by pytorch
 
-class EmotionEfficientNetB0(nn.Module):
+class MiniXception(nn.Module):
     def __init__(self, num_classes=7, freeze_backbone=True):
-        super(EmotionEfficientNetB0, self).__init__()
+        super(MiniXception, self).__init__()
 
-        # Load pretrained EfficientNet-B0
-        self.backbone = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
+        def conv_block(in_ch, out_ch, pool=True):
+            layers = [
+                nn.Conv2d(in_ch, out_ch, 3, padding=1),
+                nn.BatchNorm2d(out_ch),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(out_ch, out_ch, 3, padding=1),
+                nn.BatchNorm2d(out_ch),
+                nn.ReLU(inplace=True)
+            ]
+            if pool:
+                layers.append(nn.MaxPool2d(2))
+            return nn.Sequential(*layers)
 
-        # freeze feature extractor, weights won't change since model already learned general features
-        if freeze_backbone:
-            for param in self.backbone.parameters():
-                param.requires_grad = False
-
-        # replace the classifier (fc layer)
-        in_features = self.backbone.classifier[1].in_features  # fc layer in EfficientNet
-        self.backbone.classifier = nn.Sequential(
-            nn.Linear(in_features, 256), # reduce 1280 → 256
-            nn.ReLU(), # adds non-linearity
-            nn.Dropout(0.3), # randomly drops 30% of neurons during training
-            nn.Linear(256, num_classes) # 256 → 7, final output for emotion classes
+        self.features = nn.Sequential(
+            conv_block(1, 8),   # input is grayscale 1 channel
+            conv_block(8, 16),
+            conv_block(16, 32),
+            conv_block(32, 64)
         )
 
+        self.global_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Linear(64, num_classes)
+
     def forward(self, x):
-        # forward pass through modified ResNet
-        return self.backbone(x)
+        x = self.features(x)
+        x = self.global_pool(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        return x
 
 # initializing model and optimizer
-model = EmotionEfficientNetB0(num_classes=7, freeze_backbone=True).to(device)
+model = MiniXception(num_classes=7).to(device)
 # optimizer only for classifier initially
-optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4)
-
-# unfreeze last few layers after classifier converges
-# EfficientNet has 16 blocks; we can unfreeze last 3 blocks, letting model learn higher level features
-for name, param in model.backbone.named_parameters():
-    if "features.7" in name or "features.8" in name or "features.9" in name:
-        param.requires_grad = True
-
-# re-create optimizer for fine-tuning after unfreezing
-# lowered learning rate to avoid drastically changing pretrained weights
-optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-5)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
 # --- WEIGHTED LOSS FUNCTION --- #
 class_weights = 1.0 / torch.sqrt(torch.tensor(counts, dtype=torch.float32)) # sqrt of inv freq weighting
@@ -55,13 +54,13 @@ class_weights_tensor = class_weights.clone().detach().to(device)
 criterion = nn.CrossEntropyLoss(weight=class_weights_tensor) # weight class ensures loss function prioritizes minority classes more
 
 # load previous best model and val loss if exists
-best_model_path = "../trained models/best_emotion_cnn_transfer.pth"
-best_val_loss_path = "../trained models/best validation loss/val_loss_transfer.txt"
+best_model_path = "../trained models/best_emotion_cnn_minixception.pth"
+best_val_loss_path = "../trained models/best validation loss/val_loss_minixception.txt"
 
 # checkpoint paths
-checkpoint_model_path = "../trained models/checkpoints/transfer/checkpoint_model_transfer.pth"
-checkpoint_optimizer_path = "../trained models/checkpoints/transfer/checkpoint_optimizer_transfer.pth"
-checkpoint_val_loss_path = "../trained models/checkpoints/transfer/checkpoint_val_loss_transfer.txt"
+checkpoint_model_path = "../trained models/checkpoints/minixception/checkpoint_model_minixception.pth"
+checkpoint_optimizer_path = "../trained models/checkpoints/minixception/checkpoint_optimizer_minixception.pth"
+checkpoint_val_loss_path = "../trained models/checkpoints/minixception/checkpoint_val_loss_minixception.txt"
 
 # load checkpoint if it exists
 if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer_path) and os.path.exists(checkpoint_val_loss_path):
@@ -80,7 +79,7 @@ if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer
 
         print("Loaded previous optimizer state.")
     
-    print("Continuing training at loaded model. To restart training, delete all contents in checkpoints TRANSFER folder."
+    print("Continuing training at loaded model. To restart training, delete all contents in checkpoints MINIXCEPTION folder."
             "This includes:\n - checkpoint model\n - checkpoint optimizer state\n - checkpoint val loss")
 else:
     # if no checkpoint exists, try to load existing best model val loss
@@ -105,7 +104,7 @@ for epoch in range(num_epochs):
     running_loss = 0.0
 
     # progress bar
-    train_pbar = tqdm(train_loader_rgb, desc=f"Epoch {epoch+1} [Train]", leave=False, total=len(train_loader))
+    train_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1} [Train]", leave=False)
 
     for images, labels in train_pbar:
         images, labels = images.to(device), labels.to(device) # moving images and labels to device
@@ -127,7 +126,7 @@ for epoch in range(num_epochs):
     correct = 0
     total = 0
 
-    val_pbar = tqdm(val_loader_rgb, desc=f"Epoch {epoch+1} [Val]", leave=False, total=len(val_loader))
+    val_pbar = tqdm(val_loader, desc=f"Epoch {epoch+1} [Val]", leave=False)
 
     with torch.no_grad():
         for images, labels in val_pbar:
@@ -153,13 +152,13 @@ for epoch in range(num_epochs):
     # save checkpoint model
     torch.save(model.state_dict(), checkpoint_model_path)
     torch.save(optimizer.state_dict(), checkpoint_optimizer_path) # enables resumed training
-    with open("../trained models/checkpoints/transfer/checkpoint_val_loss_transfer.txt", "w") as f: # writing to new txt file and saving checkpoint val loss
+    with open("../trained models/checkpoints/minixception/checkpoint_val_loss_minixception.txt", "w") as f: # writing to new txt file and saving checkpoint val loss
             f.write(f"{val_epoch_loss:.6f}")
     # save best model
     if val_epoch_loss < best_val_loss:
         best_val_loss = val_epoch_loss
         torch.save(model.state_dict(), best_model_path)
-        with open("../trained models/best validation loss/val_loss_transfer.txt", "w") as f: # writing to new txt file and saving best val loss
+        with open("../trained models/best validation loss/val_loss_minixception.txt", "w") as f: # writing to new txt file and saving best val loss
             f.write(f"{best_val_loss:.6f}")
     
         print(f"Best model saved with val loss: {best_val_loss:.4f}")
