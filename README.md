@@ -22,4 +22,4 @@ use 2-3 conv layers, 1-2 FC layers
 data augmentation - helps generalization 
 
 #### next step
-removed transfer model idea completely. switching to scratch minixception built for fer2013. we can use this to compare with our scratch cnn model.
+removed transfer model idea completely. switching to scratch minixception built for fer2013. we can use this to compare with our scratch cnn model. ALSO ADD LEARNING RATE SCHEDULER FOR BOTH MODELS TO MAYBE IMRPOVE LOSS AND ACCURACY
