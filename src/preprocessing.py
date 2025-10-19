@@ -28,6 +28,24 @@ def get_class_counts(dataset):
     counts = [label_counts[i] for i in range(len(class_names))]
     return counts, class_names
 
+class GrayscaleToRGBWrapper:
+    """
+    Helper class.
+    Used to convert grayscale input into 3-channel RGB.
+    This is needed for most transfer models as they are trained on RGB ImageNet
+    """
+    def __init__(self, dataloader): # constructor
+        self.dataloader = dataloader
+
+    def __iter__(self):
+        for images, labels in self.dataloader:
+            # images: [batch_size, 1, H, W]
+            images_rgb = images.repeat(1, 3, 1, 1)  # duplicate channel to 3 (RGB) [batch_size, 3, H, W]
+            yield images_rgb, labels
+
+    def __len__(self):
+        return len(self.dataloader)
+
 # transformations for train data
 train_transform = transforms.Compose([
     transforms.Resize((48, 48)), # scales photo to 48x48
@@ -80,3 +98,7 @@ train_loader = DataLoader(
 )
 val_loader = DataLoader(val_subset, batch_size=64, shuffle=False)
 test_loader  = DataLoader(test_data, batch_size=64, shuffle=False) # don't shuffle test data, for consistent evaluation
+
+# DataLoader specific for transfer model
+train_loader_rgb = GrayscaleToRGBWrapper(train_loader)
+val_loader_rgb = GrayscaleToRGBWrapper(val_loader)

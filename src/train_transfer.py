@@ -4,7 +4,7 @@ import torch.nn as nn
 from torchvision import models
 from tqdm.auto import tqdm
 
-from preprocessing import train_loader, val_loader, counts
+from preprocessing import train_loader_rgb, val_loader_rgb, counts
 
 device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported by pytorch
 
@@ -109,7 +109,7 @@ for epoch in range(num_epochs):
     running_loss = 0.0
 
     # progress bar
-    train_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1} [Train]", leave=False)
+    train_pbar = tqdm(train_loader_rgb, desc=f"Epoch {epoch+1} [Train]", leave=False)
 
     for images, labels in train_pbar:
         images, labels = images.to(device), labels.to(device) # moving images and labels to device
@@ -123,7 +123,7 @@ for epoch in range(num_epochs):
         # update progress bar
         train_pbar.set_postfix({'Loss': f'{loss.item():.4f}'})
     
-    epoch_loss = running_loss / len(train_loader.dataset)
+    epoch_loss = running_loss / len(train_loader_rgb.dataset)
     train_losses.append(epoch_loss) # add the epoch loss to the train array
 
     model.eval() # evaluation phase
@@ -131,7 +131,7 @@ for epoch in range(num_epochs):
     correct = 0
     total = 0
 
-    val_pbar = tqdm(val_loader, desc=f"Epoch {epoch+1} [Val]", leave=False)
+    val_pbar = tqdm(val_loader_rgb, desc=f"Epoch {epoch+1} [Val]", leave=False)
 
     with torch.no_grad():
         for images, labels in val_pbar:
@@ -147,7 +147,7 @@ for epoch in range(num_epochs):
 
             val_pbar.set_postfix({'Val Loss': f'{loss.item():.4f}'})
         
-    val_epoch_loss = val_loss / len(val_loader.dataset)
+    val_epoch_loss = val_loss / len(val_loader_rgb.dataset)
     val_accuracy = correct / total * 100
     val_losses.append(val_epoch_loss)
     val_accuracies.append(val_accuracy)
