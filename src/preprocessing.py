@@ -36,6 +36,7 @@ class GrayscaleToRGBWrapper:
     """
     def __init__(self, dataloader): # constructor
         self.dataloader = dataloader
+        self.dataset_len = len(dataloader.dataset)  # store original dataset length
 
     def __iter__(self):
         for images, labels in self.dataloader:
@@ -44,7 +45,7 @@ class GrayscaleToRGBWrapper:
             yield images_rgb, labels
 
     def __len__(self):
-        return len(self.dataloader)
+        return self.dataset_len
 
 # transformations for train data
 train_transform = transforms.Compose([
