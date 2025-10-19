@@ -22,4 +22,4 @@ use 2-3 conv layers, 1-2 FC layers
 data augmentation - helps generalization 
 
 #### next step
-sample distribution looks unbalanced with no disgust and too much happy. soln is to use a weighted loss function.
+removed transfer model idea completely. switching to scratch minixception built for fer2013. we can use this to compare with our scratch cnn model.
