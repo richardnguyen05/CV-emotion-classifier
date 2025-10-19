@@ -8,12 +8,12 @@ from preprocessing import train_loader, val_loader, counts
 
 device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported by pytorch
 
-class EmotionResNet18(nn.Module):
+class EmotionEfficientNetB0(nn.Module):
     def __init__(self, num_classes=7, freeze_backbone=True):
-        super(EmotionResNet18, self).__init__()
+        super(EmotionEfficientNetB0, self).__init__()
 
-        # load pretrained ResNet18 model
-        self.backbone = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+        # Load pretrained EfficientNet-B0
+        self.backbone = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
 
         # freeze feature extractor, weights won't change since model already learned general features
         if freeze_backbone:
@@ -25,12 +25,12 @@ class EmotionResNet18(nn.Module):
         # output feature map = [24, 24]
 
         # replace the classifier (fc layer)
-        in_features = self.backbone.fc.in_features # for ResNet18, feature map is compressed to single vector of 512
-        self.backbone.fc = nn.Sequential(
-            nn.Linear(in_features, 256), # 512 → 256, reduce output to 256 channels
+        in_features = self.backbone.classifier[1].in_features  # fc layer in EfficientNet
+        self.backbone.classifier = nn.Sequential(
+            nn.Linear(in_features, 256), # reduce 1280 → 256
             nn.ReLU(), # adds non-linearity
             nn.Dropout(0.3), # randomly drops 30% of neurons during training
-            nn.Linear(256, num_classes) # 256 → 7, logits for the emotion classes
+            nn.Linear(256, num_classes) # 256 → 7, final output for emotion classes
         )
 
     def forward(self, x):
@@ -38,15 +38,19 @@ class EmotionResNet18(nn.Module):
         return self.backbone(x)
 
 # initializing model and optimizer
-model = EmotionResNet18(num_classes=7, freeze_backbone=True).to(device)
-optimizer = torch.optim.Adam(model.backbone.fc.parameters(), lr=1e-4) # backbone frozen, only classifier is trained
+model = EmotionEfficientNetB0(num_classes=7, freeze_backbone=True).to(device)
+# optimizer only for classifier initially
+optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4)
 
-# unfreeze last residual layer after classifier converges (ResNet18 has 4 residual layers, each layer having 4 conv layers and 2 basic blocks)
+# unfreeze last few layers after classifier converges
+# EfficientNet has 16 blocks; we can unfreeze last 3 blocks, letting model learn higher level features
 for name, param in model.backbone.named_parameters():
-    if "layer4" in name:
-        param.requires_grad = True # unfreezing all of backbone risks overfitting for small-medium sized datasets
+    if "features.7" in name or "features.8" in name or "features.9" in name:
+        param.requires_grad = True
 
-optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-5) # lower lr prevents destroying weights during fine-tuning
+# re-create optimizer for fine-tuning after unfreezing
+# lowered learning rate to avoid drastically changing pretrained weights
+optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-5)
 
 # --- WEIGHTED LOSS FUNCTION --- #
 class_weights = 1.0 / torch.sqrt(torch.tensor(counts, dtype=torch.float32)) # sqrt of inv freq weighting
