@@ -1,6 +1,5 @@
 import torch
-from torch.utils.data import DataLoader
-from torch.utils.data import WeightedRandomSampler
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from torchvision import datasets, transforms
 import numpy as np
 from torch.utils.data import random_split
@@ -52,17 +51,22 @@ train_data = datasets.ImageFolder(root='../data/raw/train', transform=train_tran
 test_data = datasets.ImageFolder(root='../data/raw/test', transform=test_transform)
 
 # splitting train dataset
-train_size = int(0.8 * len(train_data)) # train will be 80% of its actual size, other 20 is for validation set
-val_size = len(train_data) - train_size
-train_subset, val_subset = random_split(train_data, [train_size, val_size])
+train_size = int(0.8 * len(raw_train_data)) # train will be 80% of its actual size, other 20 is for validation set
+val_size = len(raw_train_data) - train_size
+indices = torch.randperm(len(raw_train_data)) # generates tensor and randomly shuffles
+train_indices = indices[:train_size]
+val_indices = indices[train_size:] # remaining 20% for val
+
+# creating subsets
+train_subset = torch.utils.data.Subset(train_data, train_indices)
+val_subset = torch.utils.data.Subset(raw_train_data, val_indices)
 
 # get class counts from full train data and convert to np array
-counts, class_names = get_class_counts(train_data)
+counts, class_names = get_class_counts(raw_train_data)
 counts = np.array(counts, dtype=np.float32)
 
 # WeightedRandomSampler to handle data imbalance
-train_indices = train_subset.indices
-targets_subset = np.array([train_data.targets[i] for i in train_subset.indices]) # targets for only the train_subset
+targets_subset = np.array([raw_train_data.targets[i] for i in train_subset.indices]) # targets for only the train_subset
 sample_weights = 1.0 / counts[targets_subset]
 sample_weights_tensor = torch.tensor(sample_weights, dtype=torch.float32) # conver to tensor
 
