@@ -15,11 +15,12 @@ class MiniXception(nn.Module):
         def conv_block(in_ch, out_ch, pool=True): # defining a convolution block. we have 2 conv layers per block, set pool to true to enable max pool
             layers = [
                 nn.Conv2d(in_ch, out_ch, 3, padding=1), # kernel size of 3, padding of 1 keeps spatial size same
-                nn.BatchNorm2d(out_ch), # normalize ouput channel
-                nn.ReLU(inplace=True),
+                nn.BatchNorm2d(out_ch), # batch normalization
+                nn.ReLU(inplace=True), # ReLU Activation (repeat the three steps again to form the conv block)
                 nn.Conv2d(out_ch, out_ch, 3, padding=1),
                 nn.BatchNorm2d(out_ch),
-                nn.ReLU(inplace=True)
+                nn.ReLU(inplace=True),
+                nn.Dropout(0.3) # drop 30% of neurons during training
             ]
             if pool:
                 layers.append(nn.MaxPool2d(2)) # reduce spacial size by half after each block
@@ -32,7 +33,7 @@ class MiniXception(nn.Module):
             conv_block(32, 64) # with each conv block, feature map is doubled
         )
 
-        self.global_pool = nn.AdaptiveAvgPool2d(1)
+        self.global_pool = nn.AdaptiveAvgPool2d(1) # global pooling
         self.fc = nn.Linear(64, num_classes) # fc layer produces raw logits (7) for emotion classes
 
     def forward(self, x):
@@ -45,7 +46,7 @@ class MiniXception(nn.Module):
 # initializing model and optimizer
 model = MiniXception(num_classes=7).to(device)
 # optimizer only for classifier initially
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.002)
 
 # lr scheduler (reduce lr if it plateaus). same scheduler as scratch custom CNN
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -198,7 +199,7 @@ plt.ylabel('Loss')
 plt.title('Training and Validation Loss')
 plt.legend()
 plt.grid(True)
-plt.savefig("../plots/minixcpetion/loss.png") # save fig to plots folder
+plt.savefig("../plots/minixception/loss.png") # save fig to plots folder
 plt.show()
 
 # ----- Accuracy Plot -----
@@ -209,6 +210,6 @@ plt.xlabel('Epoch')
 plt.ylabel('Accuracy (%)')
 plt.title('Training and Validation Accuracy')
 plt.legend()
-plt.savefig("../plots/minixcpetion/acc.png") # save fig to plots folder
+plt.savefig("../plots/minixception/acc.png") # save fig to plots folder
 plt.grid(True)
 plt.show()
