@@ -110,13 +110,16 @@ best_val_loss_path = "../trained models/best validation loss/val_loss_minixcepti
 # checkpoint paths
 checkpoint_model_path = "../trained models/checkpoints/minixception/checkpoint_model_minixception.pth"
 checkpoint_optimizer_path = "../trained models/checkpoints/minixception/checkpoint_optimizer_minixception.pth"
+checkpoint_scheduler_path = "../trained models/checkpoints/minixception/checkpoint_scheduler_minixception.pth"
 checkpoint_val_loss_path = "../trained models/checkpoints/minixception/checkpoint_val_loss_minixception.txt"
 
 # load checkpoint if it exists
-if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer_path) and os.path.exists(checkpoint_val_loss_path):
+if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer_path) and os.path.exists(checkpoint_val_loss_path) and os.path.exists(checkpoint_scheduler_path):
     # load previous checkpoint model weights
     state_dict = torch.load(checkpoint_model_path, map_location=device, weights_only=True)
     model.load_state_dict(state_dict)
+    scheduler_state = torch.load(checkpoint_scheduler_path, map_location=device, weights_only=True)
+    scheduler.load_state_dict(scheduler_state)
 
     with open(checkpoint_val_loss_path, "r") as f:
         best_val_loss = float(f.read().strip())
@@ -130,7 +133,7 @@ if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer
         print("Loaded previous optimizer state.")
     
     print("Continuing training at loaded model. To restart training, delete all contents in checkpoints MINIXCEPTION folder."
-            " This includes:\n - checkpoint model\n - checkpoint optimizer state\n - checkpoint val loss")
+            " This includes:\n - checkpoint model\n - checkpoint optimizer state\n - checkpoint scheduler state\n - checkpoint val loss")
 else:
     # if no checkpoint exists, try to load existing best model val loss
     if os.path.exists(best_val_loss_path):
@@ -207,14 +210,15 @@ for epoch in range(num_epochs):
     val_accuracy = correct / total * 100
     val_losses.append(val_epoch_loss)
     val_accuracies.append(val_accuracy)
-    scheduler.step(val_epoch_loss)
+    scheduler.step()
     print("Current LR:", scheduler.get_last_lr())
 
     print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}, Val Acc: {val_accuracy:.2f}%")
 
     # save checkpoint model
     torch.save(model.state_dict(), checkpoint_model_path)
-    torch.save(optimizer.state_dict(), checkpoint_optimizer_path) # enables resumed training
+    torch.save(optimizer.state_dict(), checkpoint_optimizer_path)
+    torch.save(scheduler.state_dict(), checkpoint_scheduler_path)
     with open("../trained models/checkpoints/minixception/checkpoint_val_loss_minixception.txt", "w") as f: # writing to new txt file and saving checkpoint val loss
             f.write(f"{val_epoch_loss:.6f}")
     # save best model
