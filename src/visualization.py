@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-from datetime import datetime
 
 from preprocessing import train_loader, raw_train_loader, train_data, test_data, val_subset, get_class_counts
 
@@ -35,13 +34,7 @@ def plot_samples(images, labels, class_names, n_rows=4, n_cols=4, title="Sample 
     plt.tight_layout()
 
     if save_path:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") # produces unique timestamp
-        if save_path.endswith(".png"):
-            full_save_path = save_path.replace(".png", f"_{timestamp}.png")
-        else:
-            full_save_path = f"{save_path}_{timestamp}.png"
-        fig.savefig(full_save_path)
-        print(f"Saved plot to: {full_save_path}")
+        plt.savefig(save_path)
     
     plt.show()
 
