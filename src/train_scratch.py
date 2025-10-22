@@ -32,7 +32,7 @@ class EmotionCNN(nn.Module):
         self.global_pool = nn.AdaptiveAvgPool2d(1) # global pool reduces dimensinonality to 1x1
 
         # Fully connected layer (linearizing 2d CNN)
-        self.fc = nn.Linear(64 * 12 * 12, num_classes) # reducing features to raw logits for each of the 7 classes
+        self.fc = nn.Linear(64 * 1 * 1, num_classes) # reducing features to raw logits for each of the 7 classes
 
     def forward(self, x):
         # x shape: [batch_size, 1, 48, 48] - grayscale images
@@ -127,11 +127,11 @@ val_losses = []
 val_accuracies = [] # array for tracking val accuracies across all epochs
 
 num_epochs = 50
-epochs = range(1, num_epochs + 1) # list of epochs
 
 # initializing variables for early stopping
 early_stopping_patience = 5
 epochs_no_improve = 0
+current_best_val = float('inf')
 
 # Training loop with validation
 for epoch in range(num_epochs):
@@ -204,24 +204,29 @@ for epoch in range(num_epochs):
     torch.save(scheduler.state_dict(), checkpoint_scheduler_path)
     with open("../trained models/checkpoints/scratch/checkpoint_val_loss_scratch.txt", "w") as f: # writing to new txt file and saving checkpoint val loss
             f.write(f"{val_epoch_loss:.6f}")
+    
+    # check if current epoch greater than best current epoch
+    if val_epoch_loss < current_best_val:
+        current_best_val = val_epoch_loss
+        epochs_no_improve = 0
+    else:
+        epochs_no_improve += 1
     # save best model
     if val_epoch_loss < best_val_loss:
         best_val_loss = val_epoch_loss
-        epochs_no_improve = 0  # reset counter
         torch.save(model.state_dict(), best_model_path)
         with open("../trained models/best validation loss/val_loss_scratch.txt", "w") as f: # writing to new txt file and saving best val loss
             f.write(f"{best_val_loss:.6f}")
     
         print(f"Best model saved with val loss: {best_val_loss:.4f}")
         print(f"Best val loss saved in: {best_val_loss_path}")
-    else:
-        epochs_no_improve += 1
 
     # Early stopping check
     if epochs_no_improve >= early_stopping_patience:
         print(f"Early stopping triggered. No improvement in val loss for {early_stopping_patience} epochs.")
         break
 
+epochs = range(1, len(train_losses) + 1) # list of epochs
 # plot final results
 
 # ----- Loss Plot -----
