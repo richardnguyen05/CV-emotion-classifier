@@ -2,6 +2,7 @@ import os
 import torch
 import torch.nn as nn
 from tqdm.auto import tqdm
+import matplotlib.pyplot as plt
 
 from preprocessing import train_loader, val_loader, counts
 
@@ -45,6 +46,17 @@ class MiniXception(nn.Module):
 model = MiniXception(num_classes=7).to(device)
 # optimizer only for classifier initially
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+
+# lr scheduler (reduce lr if it plateaus). same scheduler as scratch custom CNN
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, 
+    mode='min',       # minimize val loss
+    factor=0.5,       # LR is multiplied by 0.5 when triggered
+    patience=2,       # wait 2 epochs without improvement before reducing
+    threshold=0.01,
+    threshold_mode='abs',
+    verbose=True
+)
 
 # --- WEIGHTED LOSS FUNCTION --- #
 class_weights = 1.0 / torch.sqrt(torch.tensor(counts, dtype=torch.float32)) # sqrt of inv freq weighting
@@ -92,15 +104,19 @@ else:
 
 # initializing variables for validation loss tracking
 train_losses = []
+train_accuracies = []
 val_losses = []
 val_accuracies = [] # array for tracking val accuracies across all epochs
 
 num_epochs = 15
+epochs = range(1, num_epochs + 1) # list of epochs
 
 # training loop with validation
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
+    running_corrects = 0
+    total_train = 0
 
     # progress bar
     train_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1} [Train]", leave=False)
@@ -114,11 +130,18 @@ for epoch in range(num_epochs):
         optimizer.step() # use optimizer to reduce loss (move opposite to gradient)
         running_loss += loss.item() * images.size(0)
 
+        # calculating train accuracy for this batch
+        _, preds = torch.max(outputs, 1)
+        running_corrects += (preds == labels).sum().item()
+        total_train += labels.size(0)
+
         # update progress bar
         train_pbar.set_postfix({'Loss': f'{loss.item():.4f}'})
     
     epoch_loss = running_loss / len(train_loader.dataset)
+    epoch_acc = running_corrects / total_train * 100
     train_losses.append(epoch_loss) # add the epoch loss to the train array
+    train_accuracies.append(epoch_acc)
 
     model.eval() # evaluation phase
     val_loss = 0.0
@@ -145,6 +168,7 @@ for epoch in range(num_epochs):
     val_accuracy = correct / total * 100
     val_losses.append(val_epoch_loss)
     val_accuracies.append(val_accuracy)
+    scheduler.step(val_epoch_loss)
 
     print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}, Val Acc: {val_accuracy:.2f}%")
 
@@ -163,12 +187,28 @@ for epoch in range(num_epochs):
         print(f"Best model saved with val loss: {best_val_loss:.4f}")
         print(f"Best val loss saved in: {best_val_loss_path}")
 
-# print final results
-print(f"\nFinal Results of the Run:")
-print(f"Best Validation Accuracy: {max(val_accuracies):.2f}%")
-print(f"Final Validation Accuracy: {val_accuracies[-1]:.2f}%")
-print(f"All Validation Accuracies: {[f'{val_accuracy:.2f}' for val_accuracy in val_accuracies]}")
+# plot final results
 
-print(f"\nLosses for all epochs:")
-print(f"Train: {[f'{loss:.2f}' for loss in train_losses]}")
-print(f"Validation: {[f'{loss:.2f}' for loss in val_losses]}")
+# ----- Loss Plot -----
+plt.figure(figsize=(8,5))
+plt.plot(epochs, train_losses, label='Train Loss', color='blue', linestyle='-')
+plt.plot(epochs, val_losses, label='Val Loss', color='red', linestyle='-')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Training and Validation Loss')
+plt.legend()
+plt.grid(True)
+plt.savefig("../plots/minixcpetion/loss.png") # save fig to plots folder
+plt.show()
+
+# ----- Accuracy Plot -----
+plt.figure(figsize=(8,5))
+plt.plot(epochs, train_accuracies, label='Train Accuracy', color='blue', linestyle='-')
+plt.plot(epochs, val_accuracies, label='Val Accuracy', color='red', linestyle='-')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy (%)')
+plt.title('Training and Validation Accuracy')
+plt.legend()
+plt.savefig("../plots/minixcpetion/acc.png") # save fig to plots folder
+plt.grid(True)
+plt.show()
