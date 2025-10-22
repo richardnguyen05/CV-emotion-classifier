@@ -92,15 +92,10 @@ model = MiniXception(num_classes=7).to(device) # depthwise separable with residu
 # optimizer only for classifier initially
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
 
-# lr scheduler (reduce lr if it plateaus). same scheduler as scratch custom CNN
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, 
-    mode='min',       # minimize val loss
-    factor=0.5,       # LR is multiplied by 0.5 when triggered
-    patience=2,       # wait 2 epochs without improvement before reducing
-    threshold=0.01,
-    threshold_mode='abs',
-)
+# lr scheduler (reduce lr gradually in a cosine curve)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    optimizer, T_max=25, eta_min=1e-5
+) # eta_min is the final lr at end of curve
 
 # --- WEIGHTED LOSS FUNCTION --- #
 class_weights = 1.0 / torch.sqrt(torch.tensor(counts, dtype=torch.float32)) # sqrt of inv freq weighting
