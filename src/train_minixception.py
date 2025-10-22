@@ -46,12 +46,12 @@ class MiniXception(nn.Module):
         self.block1 = self._residual_block(8, 16) # each residual block has 2 SeparableConv blocks
         self.block2 = self._residual_block(16, 32)
         self.block3 = self._residual_block(32, 64)
-        self.block4 = self._residual_block(64, 128)
+        self.block4 = self._residual_block(64, 64)
 
         # exit block
         self.global_pool = nn.AdaptiveAvgPool2d(1)
         self.dropout = nn.Dropout(0.3) # drop 30% of neurons
-        self.fc = nn.Linear(128, num_classes) # fc layer to produce raw logits for emotion classes
+        self.fc = nn.Linear(64, num_classes) # fc layer to produce raw logits for emotion classes
 
     def _residual_block(self, in_ch, out_ch):
         """
@@ -94,7 +94,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
 
 # lr scheduler (reduce lr gradually in a cosine curve)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-    optimizer, T_max=25, eta_min=1e-5
+    optimizer, T_max=50, eta_min=1e-5
 ) # eta_min is the final lr at end of curve
 
 # --- WEIGHTED LOSS FUNCTION --- #
@@ -150,8 +150,12 @@ train_accuracies = []
 val_losses = []
 val_accuracies = [] # array for tracking val accuracies across all epochs
 
-num_epochs = 25
+num_epochs = 50
 epochs = range(1, num_epochs + 1) # list of epochs
+
+# initializing variables for early stopping
+early_stopping_patience = 5
+epochs_no_improve = 0
 
 # training loop with validation
 for epoch in range(num_epochs):
@@ -224,12 +228,20 @@ for epoch in range(num_epochs):
     # save best model
     if val_epoch_loss < best_val_loss:
         best_val_loss = val_epoch_loss
+        epochs_no_improve = 0  # reset counter
         torch.save(model.state_dict(), best_model_path)
         with open("../trained models/best validation loss/val_loss_minixception.txt", "w") as f: # writing to new txt file and saving best val loss
             f.write(f"{best_val_loss:.6f}")
-    
+
         print(f"Best model saved with val loss: {best_val_loss:.4f}")
         print(f"Best val loss saved in: {best_val_loss_path}")
+    else:
+        epochs_no_improve += 1
+
+    # Early stopping check
+    if epochs_no_improve >= early_stopping_patience:
+        print(f"Early stopping triggered. No improvement in val loss for {early_stopping_patience} epochs.")
+        break
 
 # plot final results
 
