@@ -31,7 +31,6 @@ train_transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1), # reduces channel to 1 (grayscale, instead of the 3-channel RGB)
     transforms.RandomHorizontalFlip(), # horizontal flip (mirror)
     transforms.RandomRotation(10), # random rotation of up to +/- 10 degrees
-    transforms.RandomResizedCrop(48, scale=(0.8, 1.0)), # crops image, minimum crop of 80% original
     transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)), # small shift & zoom
     transforms.ColorJitter(brightness=0.3, contrast=0.3), # changes brightness and contrast of a photo sample
     transforms.ToTensor(), # converts to tensor floats
