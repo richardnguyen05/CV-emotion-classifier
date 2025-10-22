@@ -60,10 +60,9 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, 
     mode='min',       # minimize val loss
     factor=0.5,       # LR is multiplied by 0.5 when triggered
-    patience=2,       # wait 2 epochs without improvement before reducing
-    threshold=0.01,      
+    patience=1,       # wait 1 epochs without improvement before reducing
+    threshold=0.005,      
     threshold_mode='abs',    # absolute mode: best loss - current loss > threshold
-    verbose=True
 )
 
 # --- WEIGHTED LOSS FUNCTION --- #
@@ -117,7 +116,7 @@ train_accuracies = []
 val_losses = []
 val_accuracies = [] # array for tracking val accuracies across all epochs
 
-num_epochs = 15
+num_epochs = 25
 epochs = range(1, num_epochs + 1) # list of epochs
 
 # Training loop with validation
@@ -181,6 +180,7 @@ for epoch in range(num_epochs):
     val_losses.append(val_epoch_loss)
     val_accuracies.append(val_accuracy)
     scheduler.step(val_epoch_loss) # step scheduler based on validation loss
+    print("Current LR:", scheduler.get_last_lr()) # print current lr
     
     print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}, Val Acc: {val_accuracy:.2f}%")
     
@@ -204,7 +204,7 @@ for epoch in range(num_epochs):
 # ----- Loss Plot -----
 plt.figure(figsize=(8,5))
 plt.plot(epochs, train_losses, label='Train Loss', color='blue', linestyle='-')
-plt.plot(epochs, val_losses, label='Val Loss', color='red', linestyle='--')
+plt.plot(epochs, val_losses, label='Val Loss', color='red', linestyle='-')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.title('Training and Validation Loss')
