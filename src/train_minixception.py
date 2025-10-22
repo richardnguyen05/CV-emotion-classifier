@@ -6,45 +6,89 @@ import matplotlib.pyplot as plt
 
 from preprocessing import train_loader, val_loader, counts
 
-device = torch.device("cpu")  # Force to CPU usage since AMD Radeon GPU is not supported by pytorch
+device = torch.device("cpu")  # Force to CPU usage 
 
-class MiniXception(nn.Module):
-    def __init__(self, num_classes=7):
-        super(MiniXception, self).__init__()
-
-        def conv_block(in_ch, out_ch, pool=True): # defining a convolution block. we have 2 conv layers per block, set pool to true to enable max pool
-            layers = [
-                nn.Conv2d(in_ch, out_ch, 3, padding=1), # kernel size of 3, padding of 1 keeps spatial size same
-                nn.BatchNorm2d(out_ch), # batch normalization
-                nn.ReLU(inplace=True), # ReLU Activation (repeat the three steps again to form the conv block)
-                nn.Conv2d(out_ch, out_ch, 3, padding=1),
-                nn.BatchNorm2d(out_ch),
-                nn.ReLU(inplace=True),
-                nn.Dropout(0.3) # drop 30% of neurons during training
-            ]
-            if pool:
-                layers.append(nn.MaxPool2d(2)) # reduce spacial size by half after each block
-            return nn.Sequential(*layers)
-
-        self.features = nn.Sequential(
-            conv_block(1, 8),   # input is grayscale 1 channel
-            conv_block(8, 16),
-            conv_block(16, 32),
-            conv_block(32, 64) # with each conv block, feature map is doubled
-        )
-
-        self.global_pool = nn.AdaptiveAvgPool2d(1) # global pooling
-        self.fc = nn.Linear(64, num_classes) # fc layer produces raw logits (7) for emotion classes
+# Depthwise Separable Convolution 
+class SeparableConv2d(nn.Module):
+    def __init__(self, in_ch, out_ch, kernel_size=3, stride=1, padding=1):
+        super().__init__()
+        self.depthwise = nn.Conv2d(in_ch, in_ch, kernel_size, stride, padding,
+                                   groups=in_ch, bias=False) # depthwise convolution applied to each input channel independently
+        self.pointwise = nn.Conv2d(in_ch, out_ch, 1, bias=False) # pointwise conv combines outputs linearly
+        self.bn = nn.BatchNorm2d(out_ch) # batch normalization
+        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        x = self.features(x) # pass input through all conv blocks
-        x = self.global_pool(x) # apply global pool, reducing feature map to 1x1 shape
-        x = x.view(x.size(0), -1) # flatten, so we can pass it to fc layer
+        x = self.depthwise(x)
+        x = self.pointwise(x)
+        x = self.bn(x)
+        return self.relu(x)
+
+# MiniXception Architecture 
+class MiniXception(nn.Module):
+    def __init__(self, num_classes=7):
+        super().__init__()
+
+        # entry block
+        # conv block 1 
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(1, 8, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(8), # batch normalization
+            nn.ReLU(inplace=True) # ReLU activation
+        ) # conv block 2
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(8, 8, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(8),
+            nn.ReLU(inplace=True)
+        )
+
+        # middle block (residual depthwise-separable blocks)
+        self.block1 = self._residual_block(8, 16) # each residual block has 2 SeparableConv blocks
+        self.block2 = self._residual_block(16, 32)
+        self.block3 = self._residual_block(32, 64)
+        self.block4 = self._residual_block(64, 128)
+
+        # exit block
+        self.global_pool = nn.AdaptiveAvgPool2d(1)
+        self.dropout = nn.Dropout(0.3) # drop 30% of neurons
+        self.fc = nn.Linear(128, num_classes) # fc layer to produce raw logits for emotion classes
+
+    def _residual_block(self, in_ch, out_ch):
+        """
+
+        Defines the depthwise-separable residual block in the MiniXception model.
+        Main applies two depthwise separable convolutions and reduces spatial size by half.
+        Residual is the original input convolved to match main's spatial size.
+
+        """
+        residual = nn.Conv2d(in_ch, out_ch, kernel_size=1, stride=2, bias=False) # orignal input with 1x1 convolution and stride 2
+        main = nn.Sequential(
+            SeparableConv2d(in_ch, out_ch),
+            SeparableConv2d(out_ch, out_ch),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1) # reduces spacial size
+        )
+        return nn.Sequential(nn.ModuleDict({'main': main, 'residual': residual}))
+
+    def forward(self, x):
+        # entry
+        x = self.conv1(x)
+        x = self.conv2(x)
+
+        # residual connections manually applied
+        for block in [self.block1, self.block2, self.block3, self.block4]:
+            main = block[0]['main'](x)
+            residual = block[0]['residual'](x)
+            x = main + residual  # residual connection added to main
+
+        # exit
+        x = self.global_pool(x)
+        x = torch.flatten(x, 1)
+        x = self.dropout(x)
         x = self.fc(x)
         return x
 
 # initializing model and optimizer
-model = MiniXception(num_classes=7).to(device)
+model = MiniXception(num_classes=7).to(device) # depthwise separable with residual connections
 # optimizer only for classifier initially
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
 
