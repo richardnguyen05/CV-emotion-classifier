@@ -60,8 +60,8 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, 
     mode='min',       # minimize val loss
     factor=0.5,       # LR is multiplied by 0.5 when triggered
-    patience=1,       # wait 1 epochs without improvement before reducing
-    threshold=0.005,      
+    patience=2,       # wait 2 epochs without improvement before reducing
+    threshold=0.01,      
     threshold_mode='abs',    # absolute mode: best loss - current loss > threshold
 )
 

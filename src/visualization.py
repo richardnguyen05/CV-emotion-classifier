@@ -35,7 +35,7 @@ def plot_samples(images, labels, class_names, n_rows=4, n_cols=4, title="Sample 
     plt.tight_layout()
 
     if save_path:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") # produces unique timestamp
         if save_path.endswith(".png"):
             full_save_path = save_path.replace(".png", f"_{timestamp}.png")
         else:
