@@ -20,16 +20,15 @@ class EmotionCNN(nn.Module):
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)   # 48x48 → 48x48 (padding of 1 keeps spatial size the same)
         self.conv2 = nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1)  # 48x48 → 48x48
         self.pool1 = nn.MaxPool2d(2, 2)  # 48x48 → 24x24 (max pool reduces spacial size by half whilst keeping most important features)
-        self.dropout_conv1 = nn.Dropout(0.2)
+        self.dropout_conv1 = nn.Dropout(0.1)
 
         self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1) # 24x24 → 24x24
         self.conv4 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)# 24x24 → 24x24
         self.pool2 = nn.MaxPool2d(2, 2)  # 24x24 → 12x12, max pool
         self.dropout_conv2 = nn.Dropout(0.2)
 
-        # Dropout for regularization to prevent overfitting
+        # Dropout for regularization to prevent overfitting (fc)
         self.dropout_fc = nn.Dropout(0.5) # 50% of neurons are zeroed
-        self.dropout_conv = nn.Dropout(0.2)
 
         # Fully connected layer (linearizing 2d CNN)
         self.fc = nn.Linear(64 * 12 * 12, num_classes) # reducing features to raw logits for each of the 7 classes
@@ -41,14 +40,14 @@ class EmotionCNN(nn.Module):
         x = F.relu(self.conv1(x)) # [batch_size, 32, 48, 48]
         x = F.relu(self.conv2(x)) # [batch_size, 32, 48, 48]
         x = self.pool1(x)
-        x = self.dropout_conv(x)
+        x = self.dropout_conv1(x)
         # Now: [batch_size, 32, 24, 24]
         
         # Second Conv Block 
         x = F.relu(self.conv3(x)) # [batch_size, 64, 24, 24]
         x = F.relu(self.conv4(x)) # [batch_size, 64, 24, 24]
         x = self.pool2(x)
-        x = self.dropout_conv(x)
+        x = self.dropout_conv2(x)
         # Now: [batch_size, 64, 12, 12]
 
         x = torch.flatten(x, 1) # [batch_size, 64 * 12 * 12]
@@ -59,7 +58,7 @@ class EmotionCNN(nn.Module):
 
 # defining the model, optimizer, and scheduler
 model = EmotionCNN(num_classes=7).to(device) # move CNN model to device
-optimizer = optim.Adam(model.parameters(), lr=0.001) # using Adam as optimizer, learning rate=0.001
+optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4) # using Adam as optimizer, weight decay reduces overfitting
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, 
     mode='min',       # minimize val loss

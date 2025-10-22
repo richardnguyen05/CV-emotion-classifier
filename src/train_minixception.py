@@ -46,7 +46,7 @@ class MiniXception(nn.Module):
 # initializing model and optimizer
 model = MiniXception(num_classes=7).to(device)
 # optimizer only for classifier initially
-optimizer = torch.optim.Adam(model.parameters(), lr=0.002)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
 
 # lr scheduler (reduce lr if it plateaus). same scheduler as scratch custom CNN
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
