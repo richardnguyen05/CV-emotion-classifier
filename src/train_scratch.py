@@ -26,7 +26,7 @@ class EmotionCNN(nn.Module):
         self.pool2 = nn.MaxPool2d(2, 2)  # 24x24 → 12x12, max pool
 
         # regularization to prevent overfitting
-        self.dropout_fc = nn.Dropout(0.5) # 50% of neurons are zeroed
+        self.dropout_fc = nn.Dropout(0.3) # 30% of neurons are zeroed
 
         # Fully connected layer (linearizing 2d CNN)
         self.fc = nn.Linear(64 * 12 * 12, num_classes) # reducing features to raw logits for each of the 7 classes
@@ -58,8 +58,8 @@ optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4) # using 
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, 
     mode='min',       # minimize val loss
-    factor=0.5,       # LR is multiplied by 0.5 when triggered
-    patience=2,       # wait 2 epochs without improvement before reducing
+    factor=0.75,       # LR is multiplied by 0.5 when triggered
+    patience=3,       # wait 2 epochs without improvement before reducing
     threshold=0.01,      
     threshold_mode='abs',    # absolute mode: best loss - current loss > threshold
 )
