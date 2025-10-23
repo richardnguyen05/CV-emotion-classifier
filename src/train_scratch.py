@@ -25,12 +25,10 @@ class EmotionCNN(nn.Module):
         self.conv4 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)# 24x24 → 24x24
         self.pool2 = nn.MaxPool2d(2, 2)  # 24x24 → 12x12, max pool
 
-        # regularization to prevent overfitting
-        self.dropout_fc = nn.Dropout(0.3) # 30% of neurons are zeroed
-
-        # Fully connected layer (linearizing 2d CNN)
-        self.fc = nn.Linear(64 * 12 * 12, num_classes) # reducing features to raw logits for each of the 7 classes
-
+        # Fully connected layers (linearizing 2d CNN)
+        self.fc1 = nn.Linear(64 * 12 * 12, 128) # 9216 total features mapped to 128 outputs
+        self.dropout = nn.Dropout(0.3) # 30% of neurons are zeroed, for regularlization
+        self.fc2 = nn.Linear(128, num_classes) # reducing features to raw logits for each of the 7 classes
     def forward(self, x):
         # x shape: [batch_size, 1, 48, 48] - grayscale images
 
@@ -47,8 +45,9 @@ class EmotionCNN(nn.Module):
         # Now: [batch_size, 64, 12, 12]
 
         x = torch.flatten(x, 1)
-        x = self.dropout_fc(x)
-        x = self.fc(x)
+        x = F.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = F.relu(self.fc2(x))
         # Output: [batch_size, 7] - raw logits for 7 emotion classes
         return x
 
