@@ -86,11 +86,11 @@ class MiniXception(nn.Module):
 # initializing model and optimizer
 model = MiniXception(num_classes=7).to(device) # depthwise separable with residual connections
 # optimizer only for classifier initially
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
 
 # lr scheduler (reduce lr gradually in a cosine curve)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-    optimizer, T_max=50, eta_min=1e-5
+    optimizer, T_max=50, eta_min=1e-4
 ) # eta_min is the final lr at end of curve
 
 # --- WEIGHTED LOSS FUNCTION --- #
