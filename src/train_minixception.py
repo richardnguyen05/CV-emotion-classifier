@@ -64,7 +64,7 @@ class MiniXception(nn.Module):
 
         # exit block
         self.global_pool = nn.AdaptiveAvgPool2d(1)
-        self.dropout = nn.Dropout(0.3) # drop 30% of neurons
+        self.dropout = nn.Dropout(0.4) # drop 40% of neurons
         self.fc = nn.Linear(128, num_classes) # fc layer to produce raw logits for emotion classes
 
     def forward(self, x):
