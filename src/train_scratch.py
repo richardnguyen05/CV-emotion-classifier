@@ -17,37 +17,37 @@ class EmotionCNN(nn.Module):
         super(EmotionCNN, self).__init__() # super calls parent class and inherets nn.Module
         
         # Feature extraction layers
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)   # 48x48 → 48x48 (padding of 1 keeps spatial size the same)
-        self.conv2 = nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1)  # 48x48 → 48x48
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)   # 48x48 → 48x48 output size (padding of 1 keeps spatial size the same)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)  # 48x48 → 48x48
         self.pool1 = nn.MaxPool2d(2, 2)  # 48x48 → 24x24 (max pool reduces spacial size by half whilst keeping most important features)
 
-        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1) # 24x24 → 24x24
-        self.conv4 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)# 24x24 → 24x24
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1) # 24x24 → 24x24
+        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)# 24x24 → 24x24
         self.pool2 = nn.MaxPool2d(2, 2)  # 24x24 → 12x12, max pool
 
         # Fully connected layers (linearizing 2d CNN)
-        self.fc1 = nn.Linear(64 * 12 * 12, 128) # 9216 total features mapped to 128 outputs
+        self.fc1 = nn.Linear(128 * 12 * 12, 256) # total features mapped to 256 outputs
         self.dropout = nn.Dropout(0.3) # 30% of neurons are zeroed, for regularlization
-        self.fc2 = nn.Linear(128, num_classes) # reducing features to raw logits for each of the 7 classes
+        self.fc2 = nn.Linear(256, num_classes) # reducing features to raw logits for each of the 7 classes
     def forward(self, x):
         # x shape: [batch_size, 1, 48, 48] - grayscale images
 
         # First Conv Block
         x = F.relu(self.conv1(x)) # [batch_size, 32, 48, 48]
-        x = F.relu(self.conv2(x)) # [batch_size, 32, 48, 48]
+        x = F.relu(self.conv2(x)) # [batch_size, 64, 48, 48]
         x = self.pool1(x)
-        # Now: [batch_size, 32, 24, 24]
+        # Now: [batch_size, 64, 24, 24]
         
         # Second Conv Block 
-        x = F.relu(self.conv3(x)) # [batch_size, 64, 24, 24]
-        x = F.relu(self.conv4(x)) # [batch_size, 64, 24, 24]
+        x = F.relu(self.conv3(x)) # [batch_size, 128, 24, 24]
+        x = F.relu(self.conv4(x)) # [batch_size, 128, 24, 24]
         x = self.pool2(x)
-        # Now: [batch_size, 64, 12, 12]
+        # Now: [batch_size, 128, 12, 12]
 
         x = torch.flatten(x, 1)
         x = F.relu(self.fc1(x))
         x = self.dropout(x)
-        x = F.relu(self.fc2(x))
+        x = self.fc2(x)
         # Output: [batch_size, 7] - raw logits for 7 emotion classes
         return x
 
