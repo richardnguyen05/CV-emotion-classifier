@@ -121,7 +121,7 @@ val_accuracies = [] # array for tracking val accuracies across all epochs
 num_epochs = 50
 
 # initializing variables for early stopping
-early_stopping_patience = 5
+early_stopping_patience = 10
 epochs_no_improve = 0
 current_best_val = float('inf')
 
