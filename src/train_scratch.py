@@ -20,41 +20,33 @@ class EmotionCNN(nn.Module):
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)   # 48x48 → 48x48 (padding of 1 keeps spatial size the same)
         self.conv2 = nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1)  # 48x48 → 48x48
         self.pool1 = nn.MaxPool2d(2, 2)  # 48x48 → 24x24 (max pool reduces spacial size by half whilst keeping most important features)
-        self.bn1 = nn.BatchNorm2d(32) # batch normalization
 
         self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1) # 24x24 → 24x24
         self.conv4 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)# 24x24 → 24x24
         self.pool2 = nn.MaxPool2d(2, 2)  # 24x24 → 12x12, max pool
-        self.bn2 = nn.BatchNorm2d(64)
 
         # regularization to prevent overfitting
         self.dropout_fc = nn.Dropout(0.5) # 50% of neurons are zeroed
-        self.global_pool = nn.AdaptiveAvgPool2d(1) # global pool reduces dimensinonality to 1x1
 
         # Fully connected layer (linearizing 2d CNN)
-        self.fc = nn.Linear(64 * 1 * 1, num_classes) # reducing features to raw logits for each of the 7 classes
+        self.fc = nn.Linear(64 * 12 * 12, num_classes) # reducing features to raw logits for each of the 7 classes
 
     def forward(self, x):
         # x shape: [batch_size, 1, 48, 48] - grayscale images
 
         # First Conv Block
-        x = self.conv1(x) # [batch_size, 32, 48, 48]
-        x = self.conv2(x) # [batch_size, 32, 48, 48]
-        x = self.bn1(x)  # batch norm
-        x = F.relu(x) # ReLU activation
+        x = F.relu(self.conv1(x)) # [batch_size, 32, 48, 48]
+        x = F.relu(self.conv2(x)) # [batch_size, 32, 48, 48]
         x = self.pool1(x)
         # Now: [batch_size, 32, 24, 24]
         
         # Second Conv Block 
-        x = self.conv3(x) # [batch_size, 64, 24, 24]
-        x = self.conv4(x) # [batch_size, 64, 24, 24]
-        x = self.bn2(x)
-        x = F.relu(x)
+        x = F.relu(self.conv3(x)) # [batch_size, 64, 24, 24]
+        x = F.relu(self.conv4(x)) # [batch_size, 64, 24, 24]
         x = self.pool2(x)
         # Now: [batch_size, 64, 12, 12]
 
-        x = self.global_pool(x)  # 64 x 1 x 1
-        x = torch.flatten(x, 1) # [batch_size, 64 * 1 * 1]
+        x = torch.flatten(x, 1)
         x = self.dropout_fc(x)
         x = self.fc(x)
         # Output: [batch_size, 7] - raw logits for 7 emotion classes
