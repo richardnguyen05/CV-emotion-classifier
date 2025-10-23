@@ -24,6 +24,20 @@ class SeparableConv2d(nn.Module):
         x = self.bn(x)
         return self.relu(x)
 
+# Residual Block Class
+class ResidualBlock(nn.Module):
+    def __init__(self, in_ch, out_ch):
+        super().__init__()
+        self.main = nn.Sequential(
+            SeparableConv2d(in_ch, out_ch),
+            SeparableConv2d(out_ch, out_ch),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        )
+        self.residual = nn.Conv2d(in_ch, out_ch, kernel_size=1, stride=2, bias=False)
+
+    def forward(self, x):
+        return self.main(x) + self.residual(x)
+
 # MiniXception Architecture 
 class MiniXception(nn.Module):
     def __init__(self, num_classes=7):
@@ -32,53 +46,35 @@ class MiniXception(nn.Module):
         # entry block
         # conv block 1 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(1, 8, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(8), # batch normalization
+            nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), # 48x48
+            nn.BatchNorm2d(16), # batch normalization
             nn.ReLU(inplace=True) # ReLU activation
         ) # conv block 2
         self.conv2 = nn.Sequential(
-            nn.Conv2d(8, 8, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(8),
+            nn.Conv2d(16, 16, kernel_size=3, stride=1, padding=1), # 48x48
+            nn.BatchNorm2d(16),
             nn.ReLU(inplace=True)
         )
 
         # middle block (residual depthwise-separable blocks)
-        self.block1 = self._residual_block(8, 16) # each residual block has 2 SeparableConv blocks
-        self.block2 = self._residual_block(16, 32)
-        self.block3 = self._residual_block(32, 64)
-        self.block4 = self._residual_block(64, 64)
+        self.block1 = ResidualBlock(16, 32)
+        self.block2 = ResidualBlock(32, 64)
+        self.block3 = ResidualBlock(64, 128)
+        self.block4 = ResidualBlock(128, 128)
 
         # exit block
         self.global_pool = nn.AdaptiveAvgPool2d(1)
         self.dropout = nn.Dropout(0.3) # drop 30% of neurons
-        self.fc = nn.Linear(64, num_classes) # fc layer to produce raw logits for emotion classes
-
-    def _residual_block(self, in_ch, out_ch):
-        """
-
-        Defines the depthwise-separable residual block in the MiniXception model.
-        Main applies two depthwise separable convolutions and reduces spatial size by half.
-        Residual is the original input convolved to match main's spatial size.
-
-        """
-        residual = nn.Conv2d(in_ch, out_ch, kernel_size=1, stride=2, bias=False) # orignal input with 1x1 convolution and stride 2
-        main = nn.Sequential(
-            SeparableConv2d(in_ch, out_ch),
-            SeparableConv2d(out_ch, out_ch),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1) # reduces spacial size
-        )
-        return nn.Sequential(nn.ModuleDict({'main': main, 'residual': residual}))
+        self.fc = nn.Linear(128, num_classes) # fc layer to produce raw logits for emotion classes
 
     def forward(self, x):
         # entry
         x = self.conv1(x)
         x = self.conv2(x)
 
-        # residual connections manually applied
+        #  residual blocks
         for block in [self.block1, self.block2, self.block3, self.block4]:
-            main = block[0]['main'](x)
-            residual = block[0]['residual'](x)
-            x = main + residual  # residual connection added to main
+            x = block(x)
 
         # exit
         x = self.global_pool(x)
