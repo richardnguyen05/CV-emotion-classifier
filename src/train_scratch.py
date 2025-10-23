@@ -53,12 +53,12 @@ class EmotionCNN(nn.Module):
 
 # defining the model, optimizer, and scheduler
 model = EmotionCNN(num_classes=7).to(device) # move CNN model to device
-optimizer = optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-4) # using Adam as optimizer, weight decay reduces overfitting
+optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4) # using Adam as optimizer, weight decay reduces overfitting
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, 
     mode='min',       # minimize val loss
     factor=0.75,       # LR is multiplied by 0.5 when triggered
-    patience=3,       # wait 2 epochs without improvement before reducing
+    patience=2,       # wait 3 epochs without improvement before reducing
     threshold=0.01,      
     threshold_mode='abs',    # absolute mode: best loss - current loss > threshold
 )
@@ -120,7 +120,7 @@ val_accuracies = [] # array for tracking val accuracies across all epochs
 num_epochs = 50
 
 # initializing variables for early stopping
-early_stopping_patience = 10
+early_stopping_patience = 5
 epochs_no_improve = 0
 current_best_val = float('inf')
 
