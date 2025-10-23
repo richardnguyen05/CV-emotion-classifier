@@ -54,7 +54,7 @@ class EmotionCNN(nn.Module):
 
 # defining the model, optimizer, and scheduler
 model = EmotionCNN(num_classes=7).to(device) # move CNN model to device
-optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4) # using Adam as optimizer, weight decay reduces overfitting
+optimizer = optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-4) # using Adam as optimizer, weight decay reduces overfitting
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, 
     mode='min',       # minimize val loss
