@@ -108,6 +108,7 @@ checkpoint_model_path = "../trained models/checkpoints/minixception/checkpoint_m
 checkpoint_optimizer_path = "../trained models/checkpoints/minixception/checkpoint_optimizer_minixception.pth"
 checkpoint_scheduler_path = "../trained models/checkpoints/minixception/checkpoint_scheduler_minixception.pth"
 checkpoint_val_loss_path = "../trained models/checkpoints/minixception/checkpoint_val_loss_minixception.txt"
+
 if __name__ == "__main__": # wrap in main so that it only runs when this file is executed directly
 # load checkpoint if it exists
     if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer_path) and os.path.exists(checkpoint_val_loss_path) and os.path.exists(checkpoint_scheduler_path):

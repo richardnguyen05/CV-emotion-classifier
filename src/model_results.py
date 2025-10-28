@@ -82,7 +82,7 @@ def ModelPlots(y_true, y_pred, model_name, save_path=None):
 model_minix_path = "../trained models/best_emotion_cnn_minixception.pth"
 model_scratch_path = "../trained models/best_emotion_cnn_scratch.pth"
 
-# load model weights
+# load model weights if they exist
 if os.path.exists(model_minix_path):
     state_dict = torch.load(model_minix_path, map_location=device, weights_only=True)
     model_minix.load_state_dict(state_dict)
@@ -128,6 +128,8 @@ all_labels = np.array(all_labels)
 # -- EVALUATING THE MODELS -- #
 acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_minix, "MiniXception")
 ModelPlots(all_labels, all_preds_minix, "MiniXception", "../plots/minixception/evaluation")
+
+print("\n") # newline for readability
 
 acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_scratch, "EmotionCNN (Scratch)")
 ModelPlots(all_labels, all_preds_scratch, "EmotionCNN (Scratch)", "../plots/scratch/evaluation")
