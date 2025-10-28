@@ -4,8 +4,8 @@ import numpy as np
 
 from sklearn.metrics import (precision_score, recall_score, f1_score, accuracy_score, 
                              confusion_matrix, ConfusionMatrixDisplay, precision_recall_fscore_support)
-from train_scratch import EmotionCNN, device
-from train_minixception import MiniXception
+from train_scratch import model as model_scratch, device
+from train_minixception import model as model_minix
 from preprocessing import test_loader
 
 def ModelMetrics(y_true, y_pred, model_name):
@@ -77,10 +77,6 @@ def ModelPlots(y_true, y_pred, model_name, save_path=None):
         plt.savefig(f"{save_path}/performance_bar_graph.png")
     plt.show()
 
-# recreating models
-model_minix = MiniXception(num_classes=7).to(device)
-model_scratch = EmotionCNN(num_classes=7).to(device)
-
 # model paths
 model_minix_path = "../trained models/best_emotion_cnn_minixception.pth"
 model_scratch_path = "../trained models/best_emotion_cnn_scratch.pth"
@@ -91,6 +87,7 @@ model_minix.load_state_dict(state_dict)
 state_dict = torch.load(model_scratch_path, map_location=device, weights_only=True)
 model_scratch.load_state_dict(state_dict)
 
+# set to evaluation mode
 model_minix.eval()
 model_scratch.eval()
 
