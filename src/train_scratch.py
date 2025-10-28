@@ -79,53 +79,54 @@ checkpoint_optimizer_path = "../trained models/checkpoints/scratch/checkpoint_op
 checkpoint_scheduler_path = "../trained models/checkpoints/scratch/checkpoint_scheduler_scratch.pth"
 checkpoint_val_loss_path = "../trained models/checkpoints/scratch/checkpoint_val_loss_scratch.txt"
 
-# load checkpoint if it exists
-if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer_path) and os.path.exists(checkpoint_val_loss_path) and os.path.exists(checkpoint_scheduler_path):
-    # load previous checkpoint model weights
-    state_dict = torch.load(checkpoint_model_path, map_location=device, weights_only=True)
-    model.load_state_dict(state_dict)
-    scheduler_state = torch.load(checkpoint_scheduler_path, map_location=device, weights_only=True)
-    scheduler.load_state_dict(scheduler_state)
 
-    with open(checkpoint_val_loss_path, "r") as f:
-        best_val_loss = float(f.read().strip())
-    print(f"Loaded previous checkpoint model with val loss: {best_val_loss:.6f}")
-
-    # load optimizer state to continue training momentum
-    if os.path.exists(checkpoint_optimizer_path):
-        optimizer_state = torch.load(checkpoint_optimizer_path, map_location=device, weights_only=True)
-        optimizer.load_state_dict(optimizer_state)
-
-        print("Loaded previous optimizer state.")
-    
-    print("Continuing training at loaded model. To restart training, delete all contents in checkpoints SCRATCH folder."
-            " This includes:\n - checkpoint model\n - checkpoint optimizer state\n - checkpoint scheduler state\n - checkpoint val loss")
-else:
-    # if no checkpoint exists, try to load existing best model val loss
-    if os.path.exists(best_val_loss_path):
-        with open(best_val_loss_path, "r") as f:
-            best_val_loss = float(f.read().strip())
-        print(f"No checkpoint found. Loaded existing best val loss: {best_val_loss:.6f}")
-    else:
-        best_val_loss = float('inf')  # starting from scratch, start with infinity loss so if-comparison in training loop works
-        print("No checkpoint or previous best found. Training from scratch.")
-
-
-# initializing variables for validation loss tracking
-train_losses = []
-train_accuracies = []
-val_losses = []
-val_accuracies = [] # array for tracking val accuracies across all epochs
-
-num_epochs = 50
-
-# initializing variables for early stopping
-early_stopping_patience = 5
-epochs_no_improve = 0
-current_best_val = float('inf')
-
-# Training loop with validation
 if __name__ == "__main__": # wrap in main so that it only runs when this file is executed directly
+    # load checkpoint if it exists
+    if os.path.exists(checkpoint_model_path) and os.path.exists(checkpoint_optimizer_path) and os.path.exists(checkpoint_val_loss_path) and os.path.exists(checkpoint_scheduler_path):
+        # load previous checkpoint model weights
+        state_dict = torch.load(checkpoint_model_path, map_location=device, weights_only=True)
+        model.load_state_dict(state_dict)
+        scheduler_state = torch.load(checkpoint_scheduler_path, map_location=device, weights_only=True)
+        scheduler.load_state_dict(scheduler_state)
+
+        with open(checkpoint_val_loss_path, "r") as f:
+            best_val_loss = float(f.read().strip())
+        print(f"Loaded previous checkpoint model with val loss: {best_val_loss:.6f}")
+
+        # load optimizer state to continue training momentum
+        if os.path.exists(checkpoint_optimizer_path):
+            optimizer_state = torch.load(checkpoint_optimizer_path, map_location=device, weights_only=True)
+            optimizer.load_state_dict(optimizer_state)
+
+            print("Loaded previous optimizer state.")
+        
+        print("Continuing training at loaded model. To restart training, delete all contents in checkpoints SCRATCH folder."
+                " This includes:\n - checkpoint model\n - checkpoint optimizer state\n - checkpoint scheduler state\n - checkpoint val loss")
+    else:
+        # if no checkpoint exists, try to load existing best model val loss
+        if os.path.exists(best_val_loss_path):
+            with open(best_val_loss_path, "r") as f:
+                best_val_loss = float(f.read().strip())
+            print(f"No checkpoint found. Loaded existing best val loss: {best_val_loss:.6f}")
+        else:
+            best_val_loss = float('inf')  # starting from scratch, start with infinity loss so if-comparison in training loop works
+            print("No checkpoint or previous best found. Training from scratch.")
+
+
+    # initializing variables for validation loss tracking
+    train_losses = []
+    train_accuracies = []
+    val_losses = []
+    val_accuracies = [] # array for tracking val accuracies across all epochs
+
+    num_epochs = 50
+
+    # initializing variables for early stopping
+    early_stopping_patience = 5
+    epochs_no_improve = 0
+    current_best_val = float('inf')
+
+    # Training loop with validation
     for epoch in range(num_epochs):
         model.train() # set model to training phase
         running_loss = 0.0 # reset running loss for the current epoch
