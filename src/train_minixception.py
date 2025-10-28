@@ -154,94 +154,95 @@ epochs_no_improve = 0
 current_best_val = float('inf')
 
 # training loop with validation
-for epoch in range(num_epochs):
-    model.train()
-    running_loss = 0.0
-    running_corrects = 0
-    total_train = 0
+if __name__ == "__main__": # wrap in main so that it only runs when this file is executed directly
+    for epoch in range(num_epochs):
+        model.train()
+        running_loss = 0.0
+        running_corrects = 0
+        total_train = 0
 
-    # progress bar
-    train_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1} [Train]", leave=False)
+        # progress bar
+        train_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1} [Train]", leave=False)
 
-    for images, labels in train_pbar:
-        images, labels = images.to(device), labels.to(device) # moving images and labels to device
-        optimizer.zero_grad() # clearing previous gradients
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-        loss.backward() # takes loss value and calculates gradient, storing into .grad property
-        optimizer.step() # use optimizer to reduce loss (move opposite to gradient)
-        running_loss += loss.item() * images.size(0)
-
-        # calculating train accuracy for this batch
-        _, preds = torch.max(outputs, 1)
-        running_corrects += (preds == labels).sum().item()
-        total_train += labels.size(0)
-
-        # update progress bar
-        train_pbar.set_postfix({'Loss': f'{loss.item():.4f}'})
-    
-    epoch_loss = running_loss / len(train_loader.dataset)
-    epoch_acc = running_corrects / total_train * 100
-    train_losses.append(epoch_loss) # add the epoch loss to the train array
-    train_accuracies.append(epoch_acc)
-
-    model.eval() # evaluation phase
-    val_loss = 0.0
-    correct = 0
-    total = 0
-
-    val_pbar = tqdm(val_loader, desc=f"Epoch {epoch+1} [Val]", leave=False)
-
-    with torch.no_grad():
-        for images, labels in val_pbar:
-            images, labels = images.to(device), labels.to(device)
+        for images, labels in train_pbar:
+            images, labels = images.to(device), labels.to(device) # moving images and labels to device
+            optimizer.zero_grad() # clearing previous gradients
             outputs = model(images)
             loss = criterion(outputs, labels)
-            val_loss += loss.item() * images.size(0)
-            
-            # calculate accuracy
-            _, predicted = torch.max(outputs, 1)
-            total += labels.size(0) # no of samples in batch
-            correct += (predicted == labels).sum().item() # if predicted = labels, sum all correct predictions
+            loss.backward() # takes loss value and calculates gradient, storing into .grad property
+            optimizer.step() # use optimizer to reduce loss (move opposite to gradient)
+            running_loss += loss.item() * images.size(0)
 
-            val_pbar.set_postfix({'Val Loss': f'{loss.item():.4f}'})
+            # calculating train accuracy for this batch
+            _, preds = torch.max(outputs, 1)
+            running_corrects += (preds == labels).sum().item()
+            total_train += labels.size(0)
+
+            # update progress bar
+            train_pbar.set_postfix({'Loss': f'{loss.item():.4f}'})
         
-    val_epoch_loss = val_loss / len(val_loader.dataset)
-    val_accuracy = correct / total * 100
-    val_losses.append(val_epoch_loss)
-    val_accuracies.append(val_accuracy)
-    scheduler.step()
-    print("Current LR:", scheduler.get_last_lr())
+        epoch_loss = running_loss / len(train_loader.dataset)
+        epoch_acc = running_corrects / total_train * 100
+        train_losses.append(epoch_loss) # add the epoch loss to the train array
+        train_accuracies.append(epoch_acc)
 
-    print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}, Val Acc: {val_accuracy:.2f}%")
+        model.eval() # evaluation phase
+        val_loss = 0.0
+        correct = 0
+        total = 0
 
-    # save checkpoint model
-    torch.save(model.state_dict(), checkpoint_model_path)
-    torch.save(optimizer.state_dict(), checkpoint_optimizer_path)
-    torch.save(scheduler.state_dict(), checkpoint_scheduler_path)
-    with open("../trained models/checkpoints/minixception/checkpoint_val_loss_minixception.txt", "w") as f: # writing to new txt file and saving checkpoint val loss
-            f.write(f"{val_epoch_loss:.6f}")
+        val_pbar = tqdm(val_loader, desc=f"Epoch {epoch+1} [Val]", leave=False)
 
-    # check if current epoch greater than best current epoch
-    if val_epoch_loss < current_best_val:
-        current_best_val = val_epoch_loss
-        epochs_no_improve = 0
-    else:
-        epochs_no_improve += 1
-    # save best model
-    if val_epoch_loss < best_val_loss:
-        best_val_loss = val_epoch_loss
-        torch.save(model.state_dict(), best_model_path)
-        with open("../trained models/best validation loss/val_loss_minixception.txt", "w") as f: # writing to new txt file and saving best val loss
-            f.write(f"{best_val_loss:.6f}")
+        with torch.no_grad():
+            for images, labels in val_pbar:
+                images, labels = images.to(device), labels.to(device)
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item() * images.size(0)
+                
+                # calculate accuracy
+                _, predicted = torch.max(outputs, 1)
+                total += labels.size(0) # no of samples in batch
+                correct += (predicted == labels).sum().item() # if predicted = labels, sum all correct predictions
 
-        print(f"Best model saved with val loss: {best_val_loss:.4f}")
-        print(f"Best val loss saved in: {best_val_loss_path}")
+                val_pbar.set_postfix({'Val Loss': f'{loss.item():.4f}'})
+            
+        val_epoch_loss = val_loss / len(val_loader.dataset)
+        val_accuracy = correct / total * 100
+        val_losses.append(val_epoch_loss)
+        val_accuracies.append(val_accuracy)
+        scheduler.step()
+        print("Current LR:", scheduler.get_last_lr())
 
-    # Early stopping check
-    if epochs_no_improve >= early_stopping_patience:
-        print(f"Early stopping triggered. No improvement in val loss for {early_stopping_patience} epochs.")
-        break
+        print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {epoch_loss:.4f}, Val Loss: {val_epoch_loss:.4f}, Val Acc: {val_accuracy:.2f}%")
+
+        # save checkpoint model
+        torch.save(model.state_dict(), checkpoint_model_path)
+        torch.save(optimizer.state_dict(), checkpoint_optimizer_path)
+        torch.save(scheduler.state_dict(), checkpoint_scheduler_path)
+        with open("../trained models/checkpoints/minixception/checkpoint_val_loss_minixception.txt", "w") as f: # writing to new txt file and saving checkpoint val loss
+                f.write(f"{val_epoch_loss:.6f}")
+
+        # check if current epoch greater than best current epoch
+        if val_epoch_loss < current_best_val:
+            current_best_val = val_epoch_loss
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+        # save best model
+        if val_epoch_loss < best_val_loss:
+            best_val_loss = val_epoch_loss
+            torch.save(model.state_dict(), best_model_path)
+            with open("../trained models/best validation loss/val_loss_minixception.txt", "w") as f: # writing to new txt file and saving best val loss
+                f.write(f"{best_val_loss:.6f}")
+
+            print(f"Best model saved with val loss: {best_val_loss:.4f}")
+            print(f"Best val loss saved in: {best_val_loss_path}")
+
+        # Early stopping check
+        if epochs_no_improve >= early_stopping_patience:
+            print(f"Early stopping triggered. No improvement in val loss for {early_stopping_patience} epochs.")
+            break
 
 epochs = range(1, len(train_losses) + 1) # list of epochs
 # plot final results
