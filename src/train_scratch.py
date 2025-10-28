@@ -218,29 +218,29 @@ if __name__ == "__main__": # wrap in main so that it only runs when this file is
             print(f"Early stopping triggered. No improvement in val loss for {early_stopping_patience} epochs.")
             break
 
-epochs = range(1, len(train_losses) + 1) # list of epochs
-# plot final results
+    epochs = range(1, len(train_losses) + 1) # list of epochs
+    # plot final results
 
-# ----- Loss Plot -----
-plt.figure(figsize=(8,5))
-plt.plot(epochs, train_losses, label='Train Loss', color='blue', linestyle='-')
-plt.plot(epochs, val_losses, label='Val Loss', color='red', linestyle='-')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Training and Validation Loss')
-plt.legend()
-plt.grid(True)
-plt.savefig("../plots/scratch/loss.png")
-plt.show()
+    # ----- Loss Plot -----
+    plt.figure(figsize=(8,5))
+    plt.plot(epochs, train_losses, label='Train Loss', color='blue', linestyle='-')
+    plt.plot(epochs, val_losses, label='Val Loss', color='red', linestyle='-')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("../plots/scratch/loss.png")
+    plt.show()
 
-# ----- Accuracy Plot -----
-plt.figure(figsize=(8,5))
-plt.plot(epochs, train_accuracies, label='Train Accuracy', color='blue', linestyle='-')
-plt.plot(epochs, val_accuracies, label='Val Accuracy', color='red', linestyle='-')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy (%)')
-plt.title('Training and Validation Accuracy')
-plt.legend()
-plt.savefig("../plots/scratch/acc.png")
-plt.grid(True)
-plt.show()
+    # ----- Accuracy Plot -----
+    plt.figure(figsize=(8,5))
+    plt.plot(epochs, train_accuracies, label='Train Accuracy', color='blue', linestyle='-')
+    plt.plot(epochs, val_accuracies, label='Val Accuracy', color='red', linestyle='-')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy (%)')
+    plt.title('Training and Validation Accuracy')
+    plt.legend()
+    plt.savefig("../plots/scratch/acc.png")
+    plt.grid(True)
+    plt.show()
