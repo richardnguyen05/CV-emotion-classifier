@@ -1,3 +1,4 @@
+import os
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
@@ -82,10 +83,16 @@ model_minix_path = "../trained models/best_emotion_cnn_minixception.pth"
 model_scratch_path = "../trained models/best_emotion_cnn_scratch.pth"
 
 # load model weights
-state_dict = torch.load(model_minix_path, map_location=device, weights_only=True)
-model_minix.load_state_dict(state_dict)
-state_dict = torch.load(model_scratch_path, map_location=device, weights_only=True)
-model_scratch.load_state_dict(state_dict)
+if os.path.exists(model_minix_path):
+    state_dict = torch.load(model_minix_path, map_location=device, weights_only=True)
+    model_minix.load_state_dict(state_dict)
+else:
+    print("MiniXception Model not found.")
+if os.path.exists(model_scratch_path):
+    state_dict = torch.load(model_scratch_path, map_location=device, weights_only=True)
+    model_scratch.load_state_dict(state_dict)
+else:
+    print("Scratch Model not found.")
 
 # set to evaluation mode
 model_minix.eval()
