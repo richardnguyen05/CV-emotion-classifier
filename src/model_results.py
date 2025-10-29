@@ -9,8 +9,12 @@ from train_scratch import model as model_scratch, device
 from train_minixception import model as model_minix
 from preprocessing import test_loader
 
- # emotion labels for FER-2013, global variable
+ # emotion labels for FER-2013
 classes = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+
+# model paths
+model_minix_path = "../trained models/best_emotion_cnn_minixception.pth"
+model_scratch_path = "../trained models/best_emotion_cnn_scratch.pth"
 
 def ModelMetrics(y_true, y_pred, model_name):
     """
@@ -79,23 +83,21 @@ def ModelPlots(y_true, y_pred, model_name, save_path=None):
         plt.savefig(f"{save_path}/performance_bar_graph.png")
     plt.show()
 
-# model paths
-model_minix_path = "../trained models/best_emotion_cnn_minixception.pth"
-model_scratch_path = "../trained models/best_emotion_cnn_scratch.pth"
-
 # load model weights if they exist
-if os.path.exists(model_minix_path):
-    state_dict = torch.load(model_minix_path, map_location=device, weights_only=True)
-    model_minix.load_state_dict(state_dict)
-else:
-    print("MiniXception Model not found.")
-if os.path.exists(model_scratch_path):
-    state_dict = torch.load(model_scratch_path, map_location=device, weights_only=True)
-    model_scratch.load_state_dict(state_dict)
-else:
-    print("Scratch Model not found.")
+def LoadModel():
+    if os.path.exists(model_minix_path):
+        state_dict = torch.load(model_minix_path, map_location=device, weights_only=True)
+        model_minix.load_state_dict(state_dict)
+    else:
+        print("MiniXception Model not found.")
+    if os.path.exists(model_scratch_path):
+        state_dict = torch.load(model_scratch_path, map_location=device, weights_only=True)
+        model_scratch.load_state_dict(state_dict)
+    else:
+        print("Scratch Model not found.")
 
-# set to evaluation mode
+# load & set to evaluation mode
+LoadModel()
 model_minix.eval()
 model_scratch.eval()
 
