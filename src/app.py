@@ -12,6 +12,8 @@ from model_results import classes, LoadModel
 # -- GLOBAL VARS -- #
 current_model = model_minix  # default model
 img_tk = None  # placeholder for displayed image
+cap = None  # OpenCV VideoCapture object
+webcam_on = False  # track webcam status
 
 # load and set to evaluation mode
 LoadModel()
@@ -39,30 +41,51 @@ def load_image():
         prediction = predict_image(img) # calling predict_image to get prediction
         result_label.config(text=f"Prediction: {prediction}")
 
-def capture_image():
-    """Opens webcam, captures one frame, and runs prediction."""
-    global img_tk
-    cap = cv2.VideoCapture(0) # opens webcam
-    if not cap.isOpened():
-        result_label.config(text="Error: Cannot access webcam.")
-        return
+def start_webcam():
+    """Start webcam preview."""
+    global cap, webcam_on
+    if not webcam_on:
+        cap = cv2.VideoCapture(0) # turn on webcam
+        if not cap.isOpened():
+            result_label.config(text="Error: Cannot access webcam.")
+            return
+        webcam_on = True
+        update_frame() # call update frame
 
-    ret, frame = cap.read()
-    cap.release()
+def stop_webcam():
+    """Stop webcam preview."""
+    global cap, webcam_on
+    if webcam_on:
+        webcam_on = False # turn off webcam
+        if (cap != None):
+            cap.release()
+        image_label.config(image=None)
+        result_label.config(text="Prediction: ")
 
-    if ret:
-        # convert from BGR (OpenCV) to RGB (PIL)
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(frame_rgb)
+def update_frame():
+    """Update the webcam frame in GUI."""
+    global img_tk, cap, webcam_on
+    if webcam_on and cap.isOpened():
+        ret, frame = cap.read()
+        if ret:
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # BGR TO RGB FOR PIL
+            img = Image.fromarray(frame_rgb)
+            img_tk = ImageTk.PhotoImage(img.resize((250, 250)))
+            image_label.config(image=img_tk)
+            image_label.image = img_tk
+        root.after(30, update_frame)  # repeat every 30ms (~33fps)
 
-        img_tk = ImageTk.PhotoImage(img.resize((250, 250)))
-        image_label.config(image=img_tk)
-        image_label.image = img_tk
-
-        prediction = predict_image(img)
-        result_label.config(text=f"Prediction: {prediction}")
-    else:
-        result_label.config(text="Error: Failed to capture image.")
+def capture_frame():
+    """Capture current webcam frame for prediction."""
+    if webcam_on and cap is not None and cap.isOpened():
+        ret, frame = cap.read()
+        if ret:
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # BGR -> RGB
+            img = Image.fromarray(frame_rgb)
+            prediction = predict_image(img) # retrieve prediction
+            result_label.config(text=f"Prediction: {prediction}")
+        else:
+            result_label.config(text="Error: Failed to capture frame.")
 
 def switch_model():
     """Switch between MiniXception and EmotionCNN models."""
@@ -77,26 +100,25 @@ def switch_model():
 root = tk.Tk()
 root.title("Emotion Recognition")
 
-# model selection radio buttons
+# model selection
 model_var = tk.StringVar(value="MiniXception")
 tk.Label(root, text="Select Model:").pack()
-
 tk.Radiobutton(root, text="MiniXception", variable=model_var,
                value="MiniXception", command=switch_model).pack()
 tk.Radiobutton(root, text="EmotionCNN (Scratch)", variable=model_var,
                value="Scratch", command=switch_model).pack()
 
-# buttons for input method
+# buttons
 btn_frame = tk.Frame(root)
 btn_frame.pack(pady=10)
-
 tk.Button(btn_frame, text="Upload Image", command=load_image).grid(row=0, column=0, padx=5)
-tk.Button(btn_frame, text="Use Webcam", command=capture_image).grid(row=0, column=1, padx=5)
+tk.Button(btn_frame, text="Start Webcam", command=start_webcam).grid(row=0, column=1, padx=5)
+tk.Button(btn_frame, text="Capture Frame", command=capture_frame).grid(row=0, column=2, padx=5)
+tk.Button(btn_frame, text="Stop Webcam", command=stop_webcam).grid(row=0, column=3, padx=5)
 
-# display image and result
+# image + result display
 image_label = tk.Label(root)
 image_label.pack()
-
 result_label = tk.Label(root, text="Prediction: ", font=("Arial", 12, "bold"))
 result_label.pack(pady=10)
 
