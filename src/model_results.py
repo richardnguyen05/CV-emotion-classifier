@@ -12,10 +12,6 @@ from preprocessing import test_loader
  # emotion labels for FER-2013
 classes = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 
-# model paths
-model_minix_path = "../trained models/best_emotion_cnn_minixception.pth"
-model_scratch_path = "../trained models/best_emotion_cnn_scratch.pth"
-
 def ModelMetrics(y_true, y_pred, model_name):
     """
     function used to calculate performance metrics
@@ -85,6 +81,10 @@ def ModelPlots(y_true, y_pred, model_name, save_path=None):
 
 # load model weights if they exist
 def LoadModel():
+    # model paths
+    model_minix_path = "../trained models/best_emotion_cnn_minixception.pth"
+    model_scratch_path = "../trained models/best_emotion_cnn_scratch.pth"
+    
     if os.path.exists(model_minix_path):
         state_dict = torch.load(model_minix_path, map_location=device, weights_only=True)
         model_minix.load_state_dict(state_dict)
