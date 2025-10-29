@@ -9,6 +9,9 @@ from train_scratch import model as model_scratch, device
 from train_minixception import model as model_minix
 from preprocessing import test_loader
 
+ # emotion labels for FER-2013, global variable
+classes = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+
 def ModelMetrics(y_true, y_pred, model_name):
     """
     function used to calculate performance metrics
@@ -43,8 +46,6 @@ def ModelPlots(y_true, y_pred, model_name, save_path=None):
         save_path : save path for the model plots
     
     """
-    # emotion labels for FER-2013
-    classes = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 
     # confusion matrix
     cm = confusion_matrix(y_true, y_pred, labels=range(len(classes)))
