@@ -2,7 +2,6 @@ import torch
 from torch.utils.data import DataLoader, WeightedRandomSampler
 from torchvision import datasets, transforms
 import numpy as np
-from torch.utils.data import random_split
 
 from collections import Counter
 
