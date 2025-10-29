@@ -96,43 +96,44 @@ def LoadModel():
     else:
         print("Scratch Model not found.")
 
-# load & set to evaluation mode
-LoadModel()
-model_minix.eval()
-model_scratch.eval()
+if __name__ == "__main__":
+    # load & set to evaluation mode
+    LoadModel()
+    model_minix.eval()
+    model_scratch.eval()
 
-# initializing prediction arrays and true labels
-all_preds_minix = []
-all_preds_scratch = []
-all_labels = []
+    # initializing prediction arrays and true labels
+    all_preds_minix = []
+    all_preds_scratch = []
+    all_labels = []
 
-with torch.no_grad(): # disable gradients for test loop
-    for images, labels in test_loader:
-        images, labels = images.to(device), labels.to(device)
+    with torch.no_grad(): # disable gradients for test loop
+        for images, labels in test_loader:
+            images, labels = images.to(device), labels.to(device)
 
-        # forward pass
-        outputs_minix = model_minix(images)
-        outputs_scratch = model_scratch(images)
+            # forward pass
+            outputs_minix = model_minix(images)
+            outputs_scratch = model_scratch(images)
 
-        # get predicted classes
-        preds_minix = torch.argmax(outputs_minix, dim=1)
-        preds_scratch = torch.argmax(outputs_scratch, dim=1)
+            # get predicted classes
+            preds_minix = torch.argmax(outputs_minix, dim=1)
+            preds_scratch = torch.argmax(outputs_scratch, dim=1)
 
-        # store predictions and true labels
-        all_preds_minix.extend(preds_minix.cpu().numpy())
-        all_preds_scratch.extend(preds_scratch.cpu().numpy())
-        all_labels.extend(labels.cpu().numpy())
+            # store predictions and true labels
+            all_preds_minix.extend(preds_minix.cpu().numpy())
+            all_preds_scratch.extend(preds_scratch.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
 
-# convert to numpy arrays
-all_preds_minix = np.array(all_preds_minix)
-all_preds_scratch = np.array(all_preds_scratch)
-all_labels = np.array(all_labels)
+    # convert to numpy arrays
+    all_preds_minix = np.array(all_preds_minix)
+    all_preds_scratch = np.array(all_preds_scratch)
+    all_labels = np.array(all_labels)
 
-# -- EVALUATING THE MODELS -- #
-acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_minix, "MiniXception")
-ModelPlots(all_labels, all_preds_minix, "MiniXception", "../plots/minixception/evaluation")
+    # -- EVALUATING THE MODELS -- #
+    acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_minix, "MiniXception")
+    ModelPlots(all_labels, all_preds_minix, "MiniXception", "../plots/minixception/evaluation")
 
-print("\n") # newline for readability
+    print("\n") # newline for readability
 
-acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_scratch, "EmotionCNN (Scratch)")
-ModelPlots(all_labels, all_preds_scratch, "EmotionCNN (Scratch)", "../plots/scratch/evaluation")
+    acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_scratch, "EmotionCNN (Scratch)")
+    ModelPlots(all_labels, all_preds_scratch, "EmotionCNN (Scratch)", "../plots/scratch/evaluation")
