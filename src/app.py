@@ -63,29 +63,25 @@ def stop_webcam():
         result_label.config(text="Prediction: ")
 
 def update_frame():
-    """Update the webcam frame in GUI."""
+    """Continuously update webcam feed and predict in real-time."""
     global img_tk, cap, webcam_on
     if webcam_on and cap.isOpened():
         ret, frame = cap.read()
         if ret:
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # BGR TO RGB FOR PIL
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(frame_rgb)
+
+            # prediction 
+            prediction = predict_image(img)
+            result_label.config(text=f"Prediction: {prediction}")
+
+            # display frame in tkinter
             img_tk = ImageTk.PhotoImage(img.resize((250, 250)))
             image_label.config(image=img_tk)
             image_label.image = img_tk
-        root.after(30, update_frame)  # repeat every 30ms (~33fps)
 
-def capture_frame():
-    """Capture current webcam frame for prediction."""
-    if webcam_on and cap is not None and cap.isOpened():
-        ret, frame = cap.read()
-        if ret:
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # BGR -> RGB
-            img = Image.fromarray(frame_rgb)
-            prediction = predict_image(img) # retrieve prediction
-            result_label.config(text=f"Prediction: {prediction}")
-        else:
-            result_label.config(text="Error: Failed to capture frame.")
+        # schedule the next frame update (30 FPS)
+        root.after(30, update_frame)
 
 def switch_model():
     """Switch between MiniXception and EmotionCNN models."""
@@ -113,7 +109,6 @@ btn_frame = tk.Frame(root)
 btn_frame.pack(pady=10)
 tk.Button(btn_frame, text="Upload Image", command=load_image).grid(row=0, column=0, padx=5)
 tk.Button(btn_frame, text="Start Webcam", command=start_webcam).grid(row=0, column=1, padx=5)
-tk.Button(btn_frame, text="Capture Frame", command=capture_frame).grid(row=0, column=2, padx=5)
 tk.Button(btn_frame, text="Stop Webcam", command=stop_webcam).grid(row=0, column=3, padx=5)
 
 # image + result display
