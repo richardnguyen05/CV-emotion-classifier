@@ -118,6 +118,7 @@ def switch_model():
 # -- TKINTER GUI -- #
 root = tk.Tk()
 root.title("Emotion Recognition")
+root.geometry("600x500") # gui size
 
 # model selection
 model_var = tk.StringVar(value="MiniXception")
