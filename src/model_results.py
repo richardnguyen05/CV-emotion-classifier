@@ -84,7 +84,7 @@ def LoadModel():
     # model paths
     model_minix_path = "../trained models/best_emotion_cnn_minixception.pth"
     model_scratch_path = "../trained models/best_emotion_cnn_scratch.pth"
-    
+
     if os.path.exists(model_minix_path):
         state_dict = torch.load(model_minix_path, map_location=device, weights_only=True)
         model_minix.load_state_dict(state_dict)
