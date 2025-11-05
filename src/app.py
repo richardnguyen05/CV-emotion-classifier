@@ -14,6 +14,7 @@ current_model = model_minix  # default model
 img_tk = None  # placeholder for displayed image
 cap = None  # OpenCV VideoCapture object
 webcam_on = False  # track webcam status
+face_cascade = cv2.CascadeClassifier("../haarcascade_frontalface_alt.xml") # for face detection
 
 # load and set to evaluation mode
 LoadModel()
@@ -21,12 +22,13 @@ model_minix.eval()
 model_scratch.eval()
 
 def predict_image(img):
-    """Runs prediction on a PIL image."""
-    img_tensor = test_transform(img).unsqueeze(0).to(device) # applying test transformations to image
+    """Runs prediction on a PIL image and returns (label, confidence)."""
+    img_tensor = test_transform(img).unsqueeze(0).to(device) # applying test transformations
     with torch.no_grad():
         output = current_model(img_tensor)
-        pred = torch.argmax(output, dim=1).item()
-    return classes[pred]
+        probs = torch.softmax(output, dim=1)
+        conf, pred = torch.max(probs, dim=1)
+        return classes[pred.item()], conf.item()
 
 def load_image():
     """Loads an image from file explorer."""
@@ -38,8 +40,11 @@ def load_image():
         image_label.config(image=img_tk)
         image_label.image = img_tk
 
-        prediction = predict_image(img) # calling predict_image to get prediction
-        result_label.config(text=f"Prediction: {prediction}")
+        label, conf = predict_image(img)
+        if show_conf_var.get():
+            result_label.config(text=f"Prediction: {label} ({conf*100:.1f}%)")
+        else:
+            result_label.config(text=f"Prediction: {label}")
 
 def start_webcam():
     """Start webcam preview."""
@@ -50,6 +55,7 @@ def start_webcam():
             result_label.config(text="Error: Cannot access webcam.")
             return
         webcam_on = True
+        result_label.config(text="Webcam Running...")
         update_frame() # call update frame
 
 def stop_webcam():
@@ -63,24 +69,41 @@ def stop_webcam():
         result_label.config(text="Prediction: ")
 
 def update_frame():
-    """Continuously update webcam feed and predict in real-time."""
+    """Continuously update webcam feed and predict in real-time with bounding boxes."""
     global img_tk, cap, webcam_on
     if webcam_on and cap.isOpened():
-        ret, frame = cap.read()
+        ret, frame = cap.read() # read frame
         if ret:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            # detect face
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # to grayscale
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
+
+            for (x, y, w, h) in faces: # create bounding box
+                face_img = frame_rgb[y:y+h, x:x+w]
+                face_pil = Image.fromarray(face_img) # convert the image in bounding box to PIL
+
+                label, conf = predict_image(face_pil) # obtain prediction
+
+                # build label text
+                if show_conf_var.get():
+                    label_text = f"{label} ({conf*100:.1f}%)"
+                else:
+                    label_text = label
+
+
+                # draw bounding box
+                cv2.rectangle(frame_rgb, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                cv2.putText(frame_rgb, label_text, (x, y - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+
+            # display frame in Tkinter
             img = Image.fromarray(frame_rgb)
-
-            # prediction 
-            prediction = predict_image(img)
-            result_label.config(text=f"Prediction: {prediction}")
-
-            # display frame in tkinter
             img_tk = ImageTk.PhotoImage(img.resize((250, 250)))
             image_label.config(image=img_tk)
             image_label.image = img_tk
 
-        # schedule the next frame update (30 FPS)
         root.after(30, update_frame)
 
 def switch_model():
@@ -104,6 +127,10 @@ tk.Radiobutton(root, text="MiniXception", variable=model_var,
 tk.Radiobutton(root, text="EmotionCNN (Scratch)", variable=model_var,
                value="Scratch", command=switch_model).pack()
 
+# confidence display toggle
+show_conf_var = tk.BooleanVar(value=True)
+tk.Checkbutton(root, text="Show confidence score", variable=show_conf_var).pack(pady=5)
+
 # buttons
 btn_frame = tk.Frame(root)
 btn_frame.pack(pady=10)
@@ -114,6 +141,7 @@ tk.Button(btn_frame, text="Stop Webcam", command=stop_webcam).grid(row=0, column
 # image + result display
 image_label = tk.Label(root)
 image_label.pack()
+# only display if image is uploaded
 result_label = tk.Label(root, text="Prediction: ", font=("Arial", 12, "bold"))
 result_label.pack(pady=10)
 
