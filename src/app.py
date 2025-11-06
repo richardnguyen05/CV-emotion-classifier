@@ -15,6 +15,7 @@ img_tk = None  # placeholder for displayed image
 cap = None  # OpenCV VideoCapture object
 webcam_on = False  # track webcam status
 face_cascade = cv2.CascadeClassifier("../haarcascade_frontalface_alt.xml") # for face detection
+running = True
 
 # load and set to evaluation mode
 LoadModel()
@@ -114,6 +115,13 @@ def switch_model():
     else:
         current_model = model_scratch
     result_label.config(text=f"Model switched to {model_var.get()}")
+def stop():
+    """Stop webcam and close GUI."""
+    global webcam_on, cap
+    webcam_on = False
+    if cap is not None:
+        cap.release()
+    root.destroy()
 
 # -- TKINTER GUI -- #
 root = tk.Tk()
@@ -138,11 +146,13 @@ btn_frame.pack(pady=10)
 tk.Button(btn_frame, text="Upload Image", command=load_image).grid(row=0, column=0, padx=5)
 tk.Button(btn_frame, text="Start Webcam", command=start_webcam).grid(row=0, column=1, padx=5)
 tk.Button(btn_frame, text="Stop Webcam", command=stop_webcam).grid(row=0, column=3, padx=5)
+stop_button = tk.Button(root, text="STOP PROGRAM", command=stop, bg="red", fg="white")
+stop_button.pack(pady=10)
 
 # image + result display
 image_label = tk.Label(root)
 image_label.pack()
-# only display if image is uploaded
+
 result_label = tk.Label(root, text="Prediction: ", font=("Arial", 12, "bold"))
 result_label.pack(pady=10)
 
