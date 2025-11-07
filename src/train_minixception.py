@@ -220,6 +220,7 @@ if __name__ == "__main__": # wrap in main so that it only runs when this file is
         torch.save(model.state_dict(), checkpoint_model_path)
         torch.save(optimizer.state_dict(), checkpoint_optimizer_path)
         torch.save(scheduler.state_dict(), checkpoint_scheduler_path)
+        os.makedirs("../trained models/checkpoints/minixception/checkpoint_val_loss_minixception.txt", exist_ok=True)
         with open("../trained models/checkpoints/minixception/checkpoint_val_loss_minixception.txt", "w") as f: # writing to new txt file and saving checkpoint val loss
                 f.write(f"{val_epoch_loss:.6f}")
 
@@ -233,6 +234,7 @@ if __name__ == "__main__": # wrap in main so that it only runs when this file is
         if val_epoch_loss < best_val_loss:
             best_val_loss = val_epoch_loss
             torch.save(model.state_dict(), best_model_path)
+            os.makedirs(os.path.dirname("../trained models/best validation loss/val_loss_minixception.txt"), exist_ok=True)
             with open("../trained models/best validation loss/val_loss_minixception.txt", "w") as f: # writing to new txt file and saving best val loss
                 f.write(f"{best_val_loss:.6f}")
 
@@ -256,6 +258,7 @@ if __name__ == "__main__": # wrap in main so that it only runs when this file is
     plt.title('Training and Validation Loss')
     plt.legend()
     plt.grid(True)
+    os.makedirs(os.path.dirname("../plots/minixception/loss.png"), exist_ok=True)
     plt.savefig("../plots/minixception/loss.png") # save fig to plots folder
     plt.show()
 
@@ -267,6 +270,7 @@ if __name__ == "__main__": # wrap in main so that it only runs when this file is
     plt.ylabel('Accuracy (%)')
     plt.title('Training and Validation Accuracy')
     plt.legend()
+    os.makedirs(os.path.dirname("../plots/minixception/acc.png"), exist_ok=True)
     plt.savefig("../plots/minixception/acc.png") # save fig to plots folder
     plt.grid(True)
     plt.show()
