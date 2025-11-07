@@ -139,10 +139,10 @@ if __name__ == "__main__":
     all_labels = np.array(all_labels)
 
     # -- EVALUATING THE MODELS -- #
-    acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_minix, "MiniXception", "../data/evaluation metrics/minixception/metrics.txt")
+    acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_minix, "MiniXception", "../evaluation metrics/minixception/metrics.txt")
     ModelPlots(all_labels, all_preds_minix, "MiniXception", "../plots/minixception/evaluation")
 
     print("\n") # newline for readability
 
-    acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_scratch, "EmotionCNN (Scratch)", "../data/evaluation metrics/scratch/metrics.txt")
+    acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_scratch, "EmotionCNN (Scratch)", "../evaluation metrics/scratch/metrics.txt")
     ModelPlots(all_labels, all_preds_scratch, "EmotionCNN (Scratch)", "../plots/scratch/evaluation")
