@@ -12,7 +12,7 @@ from preprocessing import test_loader
  # emotion labels for FER-2013
 classes = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
 
-def ModelMetrics(y_true, y_pred, model_name):
+def ModelMetrics(y_true, y_pred, model_name, save_path=None):
     """
     function used to calculate performance metrics
 
@@ -22,16 +22,24 @@ def ModelMetrics(y_true, y_pred, model_name):
         model_name : model name being evalutaed
 
     """
+    
     acc = accuracy_score(y_true, y_pred)
     prec = precision_score(y_true, y_pred, average='macro', zero_division=0)
     rec = recall_score(y_true, y_pred, average='macro', zero_division=0)
     f1 = f1_score(y_true, y_pred, average='macro', zero_division=0)
 
-    print(f"{model_name} Performance:")
-    print(f"Accuracy: {acc:.4f}")
-    print(f"Precision: {prec:.4f}") 
-    print(f"Recall: {rec:.4f}")
-    print(f"F1: {f1:.4f}")
+    results = (
+        f"{model_name} Performance:\n"
+        f"Accuracy: {acc:.4f}\n"
+        f"Precision: {prec:.4f}\n"
+        f"Recall: {rec:.4f}\n"
+        f"F1: {f1:.4f}\n"
+    )
+    print(results)
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True) # ensures that directory exists, if not it makes it.
+        with open(save_path, "w") as f:
+            f.write(results)
 
     return acc, prec, rec, f1
 
@@ -53,6 +61,7 @@ def ModelPlots(y_true, y_pred, model_name, save_path=None):
     display_cm.plot(cmap='Blues', values_format='d')
     plt.title(f"Confusion Matrix - {model_name}")
     if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(f"{save_path}/cm.png")
     plt.show()
 
@@ -130,10 +139,10 @@ if __name__ == "__main__":
     all_labels = np.array(all_labels)
 
     # -- EVALUATING THE MODELS -- #
-    acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_minix, "MiniXception")
+    acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_minix, "MiniXception", "../data/evaluation metrics/minixception/metrics.txt")
     ModelPlots(all_labels, all_preds_minix, "MiniXception", "../plots/minixception/evaluation")
 
     print("\n") # newline for readability
 
-    acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_scratch, "EmotionCNN (Scratch)")
+    acc, prec, rec, f1 = ModelMetrics(all_labels, all_preds_scratch, "EmotionCNN (Scratch)", "../data/evaluation metrics/scratch/metrics.txt")
     ModelPlots(all_labels, all_preds_scratch, "EmotionCNN (Scratch)", "../plots/scratch/evaluation")
