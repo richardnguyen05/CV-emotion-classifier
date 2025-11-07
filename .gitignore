@@ -30,6 +30,7 @@ MANIFEST
 data/
 plots/
 trained models/
+evaluation metrics/
 
 # IDE
 .vscode/
